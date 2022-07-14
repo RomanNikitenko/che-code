@@ -62,7 +62,7 @@ inline:
       volume: {}
     - name: che-code-injector
       container:
-        image: quay.io/rnikitenko/che-code:test
+        image: quay.io/devspaces/code-rhel8:next
         command: ["/entrypoint-init-container.sh"]
         volumeMounts:
           - name: checode
@@ -71,3 +71,4 @@ inline:
         memoryRequest: 32Mi
         cpuLimit: 500m
         cpuRequest: 30m
+        
