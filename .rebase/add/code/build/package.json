@@ -1,0 +1,5 @@
+{
+  "devDependencies": {
+    "someNewDependency": "^1.1.1"
+  }
+}
