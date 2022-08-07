@@ -269,7 +269,7 @@ do_rebase() {
   
   echo "Using git $(which git) $(git --version)"
   # grab current upstream version
-  UPSTREAM_VERSION=$(git rev-parse upstream-code/main)
+  UPSTREAM_VERSION=$(git rev-parse origin/testBr)
   #UPSTREAM_VERSION=1.62.2
   
   # Grab current version
@@ -304,7 +304,7 @@ sed_in_place() {
 
 # $1 is the revision to pull
 pull_changes() {
-  git subtree pull --prefix code upstream-code "$1" -m "$(get_commit_message "$1")"
+  git subtree pull --prefix code origin "$1" -m "$(get_commit_message "$1")"
 }
 
 # $1 is the revision
