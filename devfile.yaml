@@ -19,43 +19,52 @@ components:
       volumeMounts:
         - name: checode
           path: /checode
-      memoryLimit: 1024Mi
+      memoryLimit: 8Gi
       memoryRequest: 256Mi
       cpuLimit: 500m
       cpuRequest: 30m
       endpoints:
-        - name: che-code
-          attributes:
-            type: main
+        - exposure: public
+          name: dev
+          protocol: http
+          secure: true
+          targetPort: 8000
+        - attributes:
+            contributed-by: che-code.eclipse.org
             cookiesAuthEnabled: true
             discoverable: false
+            type: main
             urlRewriteSupported: true
-          targetPort: 3100
           exposure: public
+          name: che-code
           path: '?tkn=eclipse-che'
-          secure: false
           protocol: https
-        - name: code-redirect-1
-          attributes:
+          secure: false
+          targetPort: 3100
+        - attributes:
+            contributed-by: che-code.eclipse.org
             discoverable: false
             urlRewriteSupported: true
+          exposure: public
+          name: code-redirect-1
+          protocol: http
           targetPort: 13131
-          exposure: public
-          protocol: http
-        - name: code-redirect-2
-          attributes:
+        - attributes:
+            contributed-by: che-code.eclipse.org
             discoverable: false
             urlRewriteSupported: true
+          exposure: public
+          name: code-redirect-2
+          protocol: http
           targetPort: 13132
-          exposure: public
-          protocol: http
-        - name: code-redirect-3
-          attributes:
+        - attributes:
+            contributed-by: che-code.eclipse.org
             discoverable: false
             urlRewriteSupported: true
-          targetPort: 13133
           exposure: public
+          name: code-redirect-3
           protocol: http
+          targetPort: 13133
     attributes:
       app.kubernetes.io/component: che-code-runtime
       app.kubernetes.io/part-of: che-code.eclipse.org
