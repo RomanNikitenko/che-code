@@ -11,20 +11,21 @@ schemaVersion: 2.1.0
 metadata:
   name: che-code
 components:
-  - name: dev
+  - name: che-code-runtime-description
     container:
-      image: quay.io/che-incubator/che-code-dev:insiders
-      memoryLimit: 7Gi
+      image: quay.io/rnikitenko/ubi9test:latest
+      command:
+        - /checode/entrypoint-volume.sh
+      volumeMounts:
+        - name: checode
+          path: /checode
+      memoryLimit: 8Gi
+      memoryRequest: 256Mi
       cpuLimit: 3500m
-      endpoints:
-        - exposure: public
-          name: dev
-          secure: true
-          protocol: http
-          targetPort: 8000
-  - name: projects
-    volume:
-      size: 3Gi
+      cpuRequest: 30m
+    attributes:
+      app.kubernetes.io/component: che-code-runtime
+      app.kubernetes.io/part-of: che-code.eclipse.org
 commands:
   - id: build
     exec:
