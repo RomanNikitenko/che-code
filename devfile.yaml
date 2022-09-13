@@ -13,7 +13,7 @@ metadata:
 components:
   - name: che-code-runtime-description
     container:
-      image: quay.io/devfile/universal-developer-image:ubi8-latest
+      image: quay.io/rnikitenko/ubi9test:latest
       command:
         - /checode/entrypoint-volume.sh
       volumeMounts:
