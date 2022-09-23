@@ -14,7 +14,7 @@ inline:
       volume: {}
     - name: che-code-injector
       container:
-        image: quay.io/rnikitenko/che-code:test
+        image: quay.io/rnikitenko/che-code:latest
         command: ["/entrypoint-init-container.sh"]
         volumeMounts:
           - name: checode
