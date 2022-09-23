@@ -21,5 +21,3 @@ inline:
             path: /checode
         memoryLimit: 1024Mi
         memoryRequest: 512Mi
-        cpuLimit: 400m
-        cpuRequest: 30m
