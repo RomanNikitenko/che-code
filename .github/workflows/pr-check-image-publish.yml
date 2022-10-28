@@ -48,7 +48,7 @@ jobs:
           registry: quay.io
           username: ${{ secrets.QUAY_USERNAME }}
           password: ${{ secrets.QUAY_PASSWORD }}
-      - name: Increase Swap Space # implemented for the Linux system only
+      - name: TEST Increase Swap Space # implemented for the Linux system only
         if: runner.os == 'Linux'
         shell: bash
         run: |
