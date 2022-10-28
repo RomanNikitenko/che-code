@@ -46,8 +46,28 @@ jobs:
         uses: docker/login-action@v1
         with:
           registry: quay.io
-          username: ${{ secrets.QUAY_PULL_REQUESTS_USERNAME }}
-          password: ${{ secrets.QUAY_PULL_REQUESTS_PASSWORD }} 
+          username: ${{ secrets.QUAY_USERNAME }}
+          password: ${{ secrets.QUAY_PASSWORD }}
+      - name: Increase Swap Space # implemented for the Linux system only
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          echo "Current swap area:"
+          sudo swapon --show
+
+          export SWAP_SIZE=7
+          export SWAP_FILE_PATH=$(swapon --show=NAME | tail -n 1)
+          
+          sudo swapoff $SWAP_FILE_PATH
+          sudo rm $SWAP_FILE_PATH
+          
+          sudo fallocate -l ${SWAP_SIZE}G $SWAP_FILE_PATH
+          sudo chmod 600 $SWAP_FILE_PATH
+          sudo mkswap $SWAP_FILE_PATH
+          sudo swapon $SWAP_FILE_PATH
+
+          echo "Updated swap area:"
+          sudo swapon --show 
       - name: Download assembly image
         uses: dawidd6/action-download-artifact@v2
         with:
@@ -60,7 +80,7 @@ jobs:
           docker load -i assembly-image/assembly-pr
       - name: Docker Push
         run: |
-          export IMAGE_NAME=quay.io/che-incubator-pull-requests/che-code:pr-${{env.PR_NUMBER}}-amd64
+          export IMAGE_NAME=quay.io/${{ secrets.QUAY_USERNAME }}/che-code:pr-${{env.PR_NUMBER}}-amd64
           docker tag assembly-pr ${IMAGE_NAME}
           docker push ${IMAGE_NAME}
           echo "IMAGE_NAME=${IMAGE_NAME}" >> $GITHUB_ENV
@@ -74,7 +94,7 @@ jobs:
           docker load -i dev-pr.tgz
       - name: Docker Push
         run: |
-          export DEV_IMAGE_NAME=quay.io/che-incubator-pull-requests/che-code-dev:pr-${{env.PR_NUMBER}}-dev-amd64
+          export DEV_IMAGE_NAME=quay.io/${{ secrets.QUAY_USERNAME }}/che-code-dev:pr-${{env.PR_NUMBER}}-dev-amd64
           docker tag dev-pr ${DEV_IMAGE_NAME}
           docker push ${DEV_IMAGE_NAME}
           echo "DEV_IMAGE_NAME=${DEV_IMAGE_NAME}" >> $GITHUB_ENV
