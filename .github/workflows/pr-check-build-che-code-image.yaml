@@ -69,8 +69,8 @@ jobs:
         uses: docker/login-action@v2
         with:
           registry: quay.io
-          username: ${{ secrets.QUAY_PULL_REQUESTS_USERNAME }}
-          password: ${{ secrets.QUAY_PULL_REQUESTS_PASSWORD }}
+          username: ${{ secrets.QUAY_USERNAME }}
+          password: ${{ secrets.QUAY_PASSWORD }}
 
       - name: Display docker images
         run: |
@@ -81,7 +81,7 @@ jobs:
           PR_NUMBER="${{ github.event.number }}"
           echo "Pull request $PR_NUMBER"
 
-          IMAGE_NAME="quay.io/che-incubator-pull-requests/che-code:pr-$PR_NUMBER-amd64"
+          IMAGE_NAME="quay.io/${{ secrets.QUAY_USERNAME }}/che-code:pr-$PR_NUMBER-amd64"
           echo "_IMAGE_NAME=${IMAGE_NAME}" >> $GITHUB_ENV
 
           docker buildx build \
@@ -119,15 +119,15 @@ jobs:
         uses: docker/login-action@v2
         with:
           registry: quay.io
-          username: ${{ secrets.QUAY_PULL_REQUESTS_USERNAME }}
-          password: ${{ secrets.QUAY_PULL_REQUESTS_PASSWORD }}
+          username: ${{ secrets.QUAY_USERNAME }}
+          password: ${{ secrets.QUAY_PASSWORD }}
 
       - name: Build Che-Code Docker image
         run: |
           PR_NUMBER="${{ github.event.number }}"
           echo "Pull request $PR_NUMBER"
           
-          DEV_IMAGE_NAME="quay.io/che-incubator-pull-requests/che-code-dev:pr-$PR_NUMBER-dev-amd64"
+          DEV_IMAGE_NAME="quay.io/${{ secrets.QUAY_USERNAME }}/che-code:dev-pr-$PR_NUMBER-dev-amd64"
           echo "Dev image $DEV_IMAGE_NAME"
           echo "_DEV_IMAGE_NAME=${DEV_IMAGE_NAME}" >> $GITHUB_ENV
           
