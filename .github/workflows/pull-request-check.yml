@@ -13,6 +13,23 @@ name: Pull Request Check
 on: [pull_request]
 
 jobs:
+  check-artifacts-lock-yaml:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout che-code source code
+        uses: actions/checkout@v4
+      - name: Generate artifacts.lock.yaml
+        run: ./build/artifacts/generate.sh
+      - name: Check if artifacts.lock.yaml is up to date
+        run: |
+          if [[ $(git diff --name-only | wc -l) != 0 ]]; then
+            # Print difference
+            git --no-pager diff
+        
+            echo "[ERROR] artifacts.lock.yaml is not up to date."
+            echo "[ERROR] Run './build/artifacts/generate.sh' and include file into the commit."
+            exit 1
+          fi
 
   build:
     name: build
@@ -20,7 +37,7 @@ jobs:
       fail-fast: false
       matrix:
         dist: ['libc-ubi8', 'libc-ubi9', 'musl']
-        runners: ['ubuntu-22.04', 'ubuntu-22.04-arm']
+        runners: ['ubuntu-22.04']
     runs-on: ${{matrix.runners}}
     steps:
       - name: Set arch environment variable
@@ -57,7 +74,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        runners: ['ubuntu-22.04', 'ubuntu-22.04-arm']
+        runners: ['ubuntu-22.04']
     runs-on: ${{matrix.runners}}
     steps:
       - name: Set arch environment variable
@@ -116,36 +133,3 @@ jobs:
         with:
           name: pull-request-number
           path: PR_NUMBER
-
-  dev:
-    name: build-che-dev-image
-    runs-on: ubuntu-22.04
-    steps:
-      - name: Checkout che-code source code
-        uses: actions/checkout@v4
-
-      - name: Cleanup docker images
-        run: |
-          docker system prune -af
-
-      - name: Build Che-Code Docker image
-        run: |
-          docker buildx build \
-            --platform linux/amd64 \
-            --progress=plain \
-            -f build/dockerfiles/dev.Dockerfile \
-            -t che-dev .
-
-      - name: Display docker images
-        run: |
-          docker images
-
-      - name: Compress che-dev image to a file
-        run: |
-          docker save che-dev | gzip > che-dev.tgz
-
-      - name: Upload che-dev docker image artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: che-dev
-          path: che-dev.tgz
