@@ -268,7 +268,9 @@ Registry.as<IConfigurationRegistry>(ConfigurationExtensions.Configuration)
 				description: localize('extensions.verifySignature', "When enabled, extensions are verified to be signed before getting installed."),
 				default: true,
 				scope: ConfigurationScope.APPLICATION,
-				included: isNative && !isLinux
+				default: true,
+				included: isNative
+				default: true,
 			},
 			[UseUnpkgResourceApiConfigKey]: {
 				type: 'boolean',
