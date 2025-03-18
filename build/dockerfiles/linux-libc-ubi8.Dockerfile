@@ -7,7 +7,7 @@
 #
 
 # https://registry.access.redhat.com/ubi8/nodejs-20
-FROM registry.access.redhat.com/ubi8/nodejs-20:1-72 as linux-libc-ubi8-builder
+FROM registry.access.redhat.com/ubi8/nodejs-20:1-73 as linux-libc-ubi8-builder
 
 USER root
 
@@ -59,8 +59,8 @@ RUN { if [[ $(uname -m) == "s390x" ]]; then LIBSECRET="\
 # Copy Che-Code to the container
 #
 #########################################################
-COPY code /checode-compilation
-WORKDIR /checode-compilation
+COPY code /code
+WORKDIR /code
 ENV ELECTRON_SKIP_BINARY_DOWNLOAD=1 \
     PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
 
@@ -71,7 +71,7 @@ RUN git init .
 RUN npm config set fetch-retry-mintimeout 100000 && npm config set fetch-retry-maxtimeout 600000
 
 # Grab dependencies (and force to rebuild them)
-RUN rm -rf /checode-compilation/node_modules && npm install --force
+RUN rm -rf /code/node_modules && npm install --force
 
 # Compile
 RUN NODE_ARCH=$(echo "console.log(process.arch)" | node) \
