@@ -29,7 +29,7 @@ export class InstallFromVSIX {
             }
 
             if (installFromVsix === false || installFromVsix === 'false') {
-                this.outputChannel.appendLine(`[InstallFromVSIX] applying ${installFromVsix} value for the ${INSTALL_FROM_VSIX} configuration.`);
+                this.outputChannel.appendLine(`[InstallFromVSIX] Applying ${installFromVsix} value for the ${INSTALL_FROM_VSIX} configuration.`);
                 // disable command
                 vscode.commands.executeCommand('setContext', INSTALL_FROM_VSIX, false);
             }
