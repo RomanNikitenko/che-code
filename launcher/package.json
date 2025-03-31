@@ -31,8 +31,7 @@
     "url": "git+https://github.com/che-incubator/che-code.git"
   },
   "dependencies": {
-    "js-yaml": "^4.1.0",
-    "@kubernetes/client-node": "^0.22.0"
+    "js-yaml": "^4.1.0"
   },
   "devDependencies": {
     "@types/jest": "^27.0.2",

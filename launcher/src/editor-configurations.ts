@@ -8,19 +8,15 @@
  * SPDX-License-Identifier: EPL-2.0
  ***********************************************************************/
 
-import * as k8s from '@kubernetes/client-node';
 import * as fs from './fs-extra.js';
-import { ProductJSON } from './product-json.js';
 import { mergeFirstWithSecond, parseJSON } from './json-utils.js';
+import { ProductJSON } from './product-json.js';
 
-const CONFIGMAP_NAME = 'vscode-editor-configurations';
+const CONFIGS_PATH = '/vscode-editor-configs';
+const SETTINGS_PATH = `${CONFIGS_PATH}/settings.json`;
+const EXTENSIONS_PATH = `${CONFIGS_PATH}/extensions.json`;
+const PRODUCT_PATH = `${CONFIGS_PATH}/product.json`;
 const REMOTE_SETTINGS_PATH = '/checode/remote/data/Machine/settings.json';
-
-const enum EditorConfigs {
-  Settings = 'settings.json',
-  Extensions = 'extensions.json',
-  Product = 'product.json',
-}
 
 /**
  * See following documentation for details
@@ -31,39 +27,32 @@ export class EditorConfigurations {
   constructor(private readonly workspaceFilePath?: string) {}
 
   async configure(): Promise<void> {
-    console.log(`# Checking for editor configurations provided by '${CONFIGMAP_NAME}' Config Map...`);
-
-    if (!process.env.DEVWORKSPACE_NAMESPACE) {
-      console.log('  > process.env.DEVWORKSPACE_NAMESPACE is not set, skip this step');
+    console.log(`# Checking for editor configurations...`);
+    if (!(await fs.pathExists(CONFIGS_PATH))) {
+      console.log(`  > Configurations are not provided`);
       return;
     }
 
     try {
-      const configmap = await this.getConfigmap();
-      if (!configmap || !configmap.data) {
-        console.log(`  > Config Map ${CONFIGMAP_NAME} is not provided, skip this step`);
-        return;
-      }
-
-      await this.configureSettings(configmap);
-      await this.configureExtensions(configmap);
-      await this.configureProductJSON(configmap);
+      await this.configureSettings();
+      await this.configureExtensions();
+      await this.configureProductJSON();
     } catch (error) {
       console.log(`  > Failed to apply editor configurations ${error}`);
     }
   }
 
-  private async configureSettings(configmap: k8s.V1ConfigMap): Promise<void> {
-    const configmapContent = configmap.data![EditorConfigs.Settings];
-    if (!configmapContent) {
+  private async configureSettings(): Promise<void> {
+    if (!(await fs.pathExists(SETTINGS_PATH))) {
+      console.log(`  > Settings are not provided`);
       return;
     }
-
     console.log('  > Configure editor settings...');
 
     try {
-      const settingsFromConfigmap = parseJSON(configmapContent, {
-        errorMessage: 'Configmap content is not valid.',
+      const settingsFileContent = await fs.readFile(SETTINGS_PATH);
+      const settingsFromConfigmap = parseJSON(settingsFileContent, {
+        errorMessage: 'Settings content is not valid.',
       });
 
       let remoteSettingsJson;
@@ -88,17 +77,17 @@ export class EditorConfigurations {
     }
   }
 
-  private async configureExtensions(configmap: k8s.V1ConfigMap): Promise<void> {
-    const configmapContent = configmap.data![EditorConfigs.Extensions];
-    if (!configmapContent) {
+  private async configureExtensions(): Promise<void> {
+    if (!(await fs.pathExists(EXTENSIONS_PATH))) {
+      console.log(`  > Extensions are not provided`);
       return;
     }
-
     console.log('  > Configure workspace extensions...');
 
     try {
-      const extensionsFromConfigmap = parseJSON(configmapContent, {
-        errorMessage: 'Configmap content is not valid.',
+      const extensionsFileContent = await fs.readFile(EXTENSIONS_PATH);
+      const extensionsFromConfigmap = parseJSON(extensionsFileContent, {
+        errorMessage: 'Extensions content is not valid.',
       });
 
       if (!this.workspaceFilePath) {
@@ -131,17 +120,17 @@ export class EditorConfigurations {
     }
   }
 
-  private async configureProductJSON(configmap: k8s.V1ConfigMap): Promise<void> {
-    const configmapContent = configmap.data![EditorConfigs.Product];
-    if (!configmapContent) {
+  private async configureProductJSON(): Promise<void> {
+    if (!(await fs.pathExists(PRODUCT_PATH))) {
+      console.log(`  > product.json content is not provided`);
       return;
     }
-
     console.log('  > Configure product.json ...');
 
     try {
-      const productFromConfigmap = parseJSON(configmapContent, {
-        errorMessage: 'Configmap content is not valid.',
+      const productFileContent = await fs.readFile(PRODUCT_PATH);
+      const productFromConfigmap = parseJSON(productFileContent, {
+        errorMessage: 'product.json content is not valid.',
       });
 
       const product = new ProductJSON();
@@ -153,23 +142,7 @@ export class EditorConfigurations {
 
       console.log('    > product.json have been configured.');
     } catch (error) {
-      console.log(`Failed to configure ${EditorConfigs.Product}.`, error);
-    }
-  }
-
-  private async getConfigmap(): Promise<k8s.V1ConfigMap | undefined> {
-    const k8sConfig = new k8s.KubeConfig();
-    k8sConfig.loadFromCluster();
-    const coreV1API = k8sConfig.makeApiClient(k8s.CoreV1Api);
-
-    try {
-      const { body } = await coreV1API.readNamespacedConfigMap(CONFIGMAP_NAME, process.env.DEVWORKSPACE_NAMESPACE!);
-      return body;
-    } catch (error) {
-      console.log(
-        `  > Warning: Can not get Configmap with editor configurations: ${error.message}, status code: ${error?.response?.statusCode}`
-      );
-      return undefined;
+      console.log('Failed to configure product.json.', error);
     }
   }
 }
