@@ -15,7 +15,7 @@ import * as vscode from 'vscode';
 import { DefaultExtensions } from './default-extensions';
 import { InstallFromVSIX } from './install-from-vsix';
 
-const CONFIGS_PATH = '/vscode-editor-configs/configurations.json';
+const CONFIGS_PATH = '/checode-config/configurations.json';
 export interface EditorConfigurations {
     [key: string]: any;
 }

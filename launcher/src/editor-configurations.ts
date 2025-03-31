@@ -12,7 +12,7 @@ import * as fs from './fs-extra.js';
 import { mergeFirstWithSecond, parseJSON } from './json-utils.js';
 import { ProductJSON } from './product-json.js';
 
-const CONFIGS_PATH = '/vscode-editor-configs';
+const CONFIGS_PATH = '/checode-config';
 const SETTINGS_PATH = `${CONFIGS_PATH}/settings.json`;
 const EXTENSIONS_PATH = `${CONFIGS_PATH}/extensions.json`;
 const PRODUCT_PATH = `${CONFIGS_PATH}/product.json`;
