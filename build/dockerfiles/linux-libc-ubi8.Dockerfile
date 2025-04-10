@@ -71,8 +71,7 @@ RUN npm config set fetch-retry-mintimeout 100000 && npm config set fetch-retry-m
 # RUN rm -rf /checode-compilation/node_modules && npm install --force
 
 RUN echo "--- CPU ---" && nproc && \
-    echo "--- RAM ---" && awk '/MemTotal/ {printf "RAM: %.2f GB\n", $2/1024/1024}' /proc/meminfo && \
-    echo "--- Disk ---" && df -h 
+    echo "--- RAM ---" && awk '/MemTotal/ {printf "RAM: %.2f GB\n", $2/1024/1024}' /proc/meminfo
 
 RUN node -e "console.log('Max old space size: ' + (require('v8').getHeapStatistics().heap_size_limit / 1024 / 1024).toFixed(2) + ' MB')"
 RUN node -e "console.log('Available CPUs: ' + require('os').cpus().length)"
