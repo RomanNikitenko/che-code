@@ -7,7 +7,7 @@
 #
 
 # https://registry.access.redhat.com/ubi8/nodejs-20
-FROM registry.access.redhat.com/ubi8/nodejs-20:1-72 as linux-libc-ubi8-builder
+FROM registry.access.redhat.com/ubi8/nodejs-20:1-73.1742991506 as linux-libc-ubi8-builder
 
 USER root
 
@@ -56,32 +56,40 @@ RUN { if [[ $(uname -m) == "s390x" ]]; then LIBSECRET="\
 # Copy Che-Code to the container
 #
 #########################################################
-COPY code /checode-compilation
+# COPY code /checode-compilation
 WORKDIR /checode-compilation
 ENV ELECTRON_SKIP_BINARY_DOWNLOAD=1 \
     PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
 
 # Initialize a git repository for code build tools
-RUN git init .
+# RUN git init .
 
 # change network timeout (slow using multi-arch build)
 RUN npm config set fetch-retry-mintimeout 100000 && npm config set fetch-retry-maxtimeout 600000
 
 # Grab dependencies (and force to rebuild them)
-RUN rm -rf /checode-compilation/node_modules && npm install --force
+# RUN rm -rf /checode-compilation/node_modules && npm install --force
 
-# Compile
-RUN NODE_ARCH=$(echo "console.log(process.arch)" | node) \
-    && NODE_VERSION=$(cat /checode-compilation/remote/.npmrc | grep target | cut -d '=' -f 2 | tr -d '"') \
-    # cache node from this image to avoid to grab it from within the build
-    && mkdir -p /checode-compilation/.build/node/v${NODE_VERSION}/linux-${NODE_ARCH} \
-    && echo "caching /checode-compilation/.build/node/v${NODE_VERSION}/linux-${NODE_ARCH}/node" \
-    && cp /usr/bin/node /checode-compilation/.build/node/v${NODE_VERSION}/linux-${NODE_ARCH}/node \
-    && NODE_OPTIONS="--max-old-space-size=8500" ./node_modules/.bin/gulp vscode-reh-web-linux-${NODE_ARCH}-min \
-    && cp -r ../vscode-reh-web-linux-${NODE_ARCH} /checode
+RUN echo "--- CPU ---" && nproc && \
+    echo "--- RAM ---" && awk '/MemTotal/ {printf "RAM: %.2f GB\n", $2/1024/1024}' /proc/meminfo
 
-RUN chmod a+x /checode/out/server-main.js \
-    && chgrp -R 0 /checode && chmod -R g+rwX /checode
+RUN node -e "console.log('Max old space size: ' + (require('v8').getHeapStatistics().heap_size_limit / 1024 / 1024).toFixed(2) + ' MB')"
+RUN node -e "console.log('Available CPUs: ' + require('os').cpus().length)"
+
+    # Compile
+RUN node -e "console.log('Max old space size 1111: ' + (require('v8').getHeapStatistics().heap_size_limit / 1024 / 1024).toFixed(2) + ' MB')" \
+    && NODE_OPTIONS="--max_old_space_size=8500" node -e "console.log('222Max old space size2 : ' + (require('v8').getHeapStatistics().heap_size_limit / 1024 / 1024).toFixed(2) + ' MB')" 
+#     && NODE_VERSION=$(cat /checode-compilation/remote/.npmrc | grep target | cut -d '=' -f 2 | tr -d '"') \
+#     # cache node from this image to avoid to grab it from within the build
+#     NODE_ARCH=$(echo "console.log(process.arch)" | node) \
+#     && mkdir -p /checode-compilation/.build/node/v${NODE_VERSION}/linux-${NODE_ARCH} \
+#     && echo "caching /checode-compilation/.build/node/v${NODE_VERSION}/linux-${NODE_ARCH}/node" \
+#     && cp /usr/bin/node /checode-compilation/.build/node/v${NODE_VERSION}/linux-${NODE_ARCH}/node \
+#     && NODE_OPTIONS="--max-old-space-size=8500" ./node_modules/.bin/gulp vscode-reh-web-linux-${NODE_ARCH}-min \
+#     && cp -r ../vscode-reh-web-linux-${NODE_ARCH} /checode
+
+# RUN chmod a+x /checode/out/server-main.js \
+#     && chgrp -R 0 /checode && chmod -R g+rwX /checode
 
 ### Beginning of tests
 # Do not change line above! It is used to cut this section to skip tests
@@ -94,13 +102,13 @@ RUN chmod a+x /checode/out/server-main.js \
 # Copy VS Code launcher to the container
 #
 #########################################################
-COPY launcher /checode-launcher
-WORKDIR /checode-launcher
-RUN npm install \
-    && mkdir /checode/launcher \
-    && cp -r out/src/*.js /checode/launcher \
-    && chgrp -R 0 /checode && chmod -R g+rwX /checode
+# COPY launcher /checode-launcher
+# WORKDIR /checode-launcher
+# RUN npm install \
+#     && mkdir /checode/launcher \
+#     && cp -r out/src/*.js /checode/launcher \
+#     && chgrp -R 0 /checode && chmod -R g+rwX /checode
 
 # Store the content of the result
-FROM scratch as linux-libc-content
-COPY --from=linux-libc-ubi8-builder /checode /checode-linux-libc/ubi8
+# FROM scratch as linux-libc-content
+# COPY --from=linux-libc-ubi8-builder /checode /checode-linux-libc/ubi8
