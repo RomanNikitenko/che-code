@@ -70,7 +70,11 @@ RUN npm config set fetch-retry-mintimeout 100000 && npm config set fetch-retry-m
 # Grab dependencies (and force to rebuild them)
 RUN rm -rf /checode-compilation/node_modules && npm install --force
 
-# Compile
+RUN echo "--- CPU ---" && nproc && \
+    echo "--- RAM ---" && awk '/MemTotal/ {printf "RAM: %.2f GB\n", $2/1024/1024}' /proc/meminfo && \
+    echo "--- Disk ---" && df -h 
+
+    # Compile
 RUN NODE_ARCH=$(echo "console.log(process.arch)" | node) \
     && NODE_VERSION=$(cat /checode-compilation/remote/.npmrc | grep target | cut -d '=' -f 2 | tr -d '"') \
     # cache node from this image to avoid to grab it from within the build

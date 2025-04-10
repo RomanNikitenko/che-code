@@ -58,6 +58,10 @@ RUN NODE_VERSION=$(cat /checode-compilation/remote/.npmrc | grep target | cut -d
     # workaround to fix build
     && cp -r /checode-compilation/node_modules/tslib /checode-compilation/remote/node_modules/
 
+RUN echo "--- CPU ---" && nproc && \
+    echo "--- RAM ---" && awk '/MemTotal/ {printf "RAM: %.2f GB\n", $2/1024/1024}' /proc/meminfo && \
+    echo "--- Disk ---" && df -h 
+    
 RUN NODE_OPTIONS="--max-old-space-size=6500" ./node_modules/.bin/gulp vscode-reh-web-linux-alpine-min
 RUN cp -r ../vscode-reh-web-linux-alpine /checode
 
