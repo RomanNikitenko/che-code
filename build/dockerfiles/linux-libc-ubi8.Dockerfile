@@ -77,8 +77,7 @@ RUN node -e "console.log('Max old space size: ' + (require('v8').getHeapStatisti
 RUN node -e "console.log('Available CPUs: ' + require('os').cpus().length)"
 
     # Compile
-RUN node -e "console.log('Max old space size 1111: ' + (require('v8').getHeapStatistics().heap_size_limit / 1024 / 1024).toFixed(2) + ' MB')" \
-    NODE_OPTIONS="--max_old_space_size=8500" node -e "console.log('222 Max old space size2 : ' + (require('v8').getHeapStatistics().heap_size_limit / 1024 / 1024).toFixed(2) + ' MB')" 
+RUN NODE_OPTIONS="--max_old_space_size=8500" node -e "console.log('222 Max old space size2 : ' + (require('v8').getHeapStatistics().heap_size_limit / 1024 / 1024).toFixed(2) + ' MB')"
 #     && NODE_VERSION=$(cat /checode-compilation/remote/.npmrc | grep target | cut -d '=' -f 2 | tr -d '"') \
 #     # cache node from this image to avoid to grab it from within the build
 #     NODE_ARCH=$(echo "console.log(process.arch)" | node) \
