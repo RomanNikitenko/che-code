@@ -56,38 +56,38 @@ RUN { if [[ $(uname -m) == "s390x" ]]; then LIBSECRET="\
 # Copy Che-Code to the container
 #
 #########################################################
-COPY code /checode-compilation
+# COPY code /checode-compilation
 WORKDIR /checode-compilation
 ENV ELECTRON_SKIP_BINARY_DOWNLOAD=1 \
     PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
 
 # Initialize a git repository for code build tools
-RUN git init .
+# RUN git init .
 
 # change network timeout (slow using multi-arch build)
 RUN npm config set fetch-retry-mintimeout 100000 && npm config set fetch-retry-maxtimeout 600000
 
 # Grab dependencies (and force to rebuild them)
-RUN rm -rf /checode-compilation/node_modules && npm install --force
+# RUN rm -rf /checode-compilation/node_modules && npm install --force
 
 RUN echo "--- CPU ---" && nproc && \
     echo "--- RAM ---" && awk '/MemTotal/ {printf "RAM: %.2f GB\n", $2/1024/1024}' /proc/meminfo && \
     echo "--- Disk ---" && df -h 
-    
-# Compile
-RUN NODE_ARCH=$(echo "console.log(process.arch)" | node) \
-    && NODE_VERSION=$(cat /checode-compilation/remote/.npmrc | grep target | cut -d '=' -f 2 | tr -d '"') \
-    # cache node from this image to avoid to grab it from within the build
-    && mkdir -p /checode-compilation/.build/node/v${NODE_VERSION}/linux-${NODE_ARCH} \
-    && echo "caching /checode-compilation/.build/node/v${NODE_VERSION}/linux-${NODE_ARCH}/node" \
-    && cp /usr/bin/node /checode-compilation/.build/node/v${NODE_VERSION}/linux-${NODE_ARCH}/node \
-    && NODE_OPTIONS="--max-old-space-size=8500" ./node_modules/.bin/gulp vscode-reh-web-linux-${NODE_ARCH}-min \
-    && cp -r ../vscode-reh-web-linux-${NODE_ARCH} /checode \
-    # cache libbrotli from this image to provide it to a user's container
-    && mkdir -p /checode/ld_libs && find /usr/lib64 -name 'libbrotli*' 2>/dev/null | xargs -I {} cp -t /checode/ld_libs {}
 
-RUN chmod a+x /checode/out/server-main.js \
-    && chgrp -R 0 /checode && chmod -R g+rwX /checode
+# Compile
+# RUN NODE_ARCH=$(echo "console.log(process.arch)" | node) \
+#     && NODE_VERSION=$(cat /checode-compilation/remote/.npmrc | grep target | cut -d '=' -f 2 | tr -d '"') \
+#     # cache node from this image to avoid to grab it from within the build
+#     && mkdir -p /checode-compilation/.build/node/v${NODE_VERSION}/linux-${NODE_ARCH} \
+#     && echo "caching /checode-compilation/.build/node/v${NODE_VERSION}/linux-${NODE_ARCH}/node" \
+#     && cp /usr/bin/node /checode-compilation/.build/node/v${NODE_VERSION}/linux-${NODE_ARCH}/node \
+#     && NODE_OPTIONS="--max-old-space-size=8500" ./node_modules/.bin/gulp vscode-reh-web-linux-${NODE_ARCH}-min \
+#     && cp -r ../vscode-reh-web-linux-${NODE_ARCH} /checode \
+#     # cache libbrotli from this image to provide it to a user's container
+#     && mkdir -p /checode/ld_libs && find /usr/lib64 -name 'libbrotli*' 2>/dev/null | xargs -I {} cp -t /checode/ld_libs {}
+
+# RUN chmod a+x /checode/out/server-main.js \
+#     && chgrp -R 0 /checode && chmod -R g+rwX /checode
 
 ### Beginning of tests
 # Do not change line above! It is used to cut this section to skip tests
@@ -151,13 +151,13 @@ RUN if [ "$(uname -m)" = "x86_64" ]; then \
 # Copy VS Code launcher to the container
 #
 #########################################################
-COPY launcher /checode-launcher
-WORKDIR /checode-launcher
-RUN npm install \
-    && mkdir /checode/launcher \
-    && cp -r out/src/*.js /checode/launcher \
-    && chgrp -R 0 /checode && chmod -R g+rwX /checode
+# COPY launcher /checode-launcher
+# WORKDIR /checode-launcher
+# RUN npm install \
+#     && mkdir /checode/launcher \
+#     && cp -r out/src/*.js /checode/launcher \
+#     && chgrp -R 0 /checode && chmod -R g+rwX /checode
 
 # Store the content of the result
-FROM scratch as linux-libc-content
-COPY --from=linux-libc-ubi9-builder /checode /checode-linux-libc/ubi9
+# FROM scratch as linux-libc-content
+# COPY --from=linux-libc-ubi9-builder /checode /checode-linux-libc/ubi9

@@ -56,19 +56,19 @@ RUN { if [[ $(uname -m) == "s390x" ]]; then LIBSECRET="\
 # Copy Che-Code to the container
 #
 #########################################################
-COPY code /checode-compilation
+# COPY code /checode-compilation
 WORKDIR /checode-compilation
 ENV ELECTRON_SKIP_BINARY_DOWNLOAD=1 \
     PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
 
 # Initialize a git repository for code build tools
-RUN git init .
+# RUN git init .
 
 # change network timeout (slow using multi-arch build)
 RUN npm config set fetch-retry-mintimeout 100000 && npm config set fetch-retry-maxtimeout 600000
 
 # Grab dependencies (and force to rebuild them)
-RUN rm -rf /checode-compilation/node_modules && npm install --force
+# RUN rm -rf /checode-compilation/node_modules && npm install --force
 
 RUN echo "--- CPU ---" && nproc && \
     echo "--- RAM ---" && awk '/MemTotal/ {printf "RAM: %.2f GB\n", $2/1024/1024}' /proc/meminfo && \
@@ -82,7 +82,7 @@ RUN NODE_ARCH=$(echo "console.log(process.arch)" | node) \
     node -e "console.log('Max old space size 1: ' + (require('v8').getHeapStatistics().heap_size_limit / 1024 / 1024).toFixed(2) + ' MB')" \
     node -e "console.log('Available CPUs 1 : ' + require('os').cpus().length)" \
     export NODE_OPTIONS="--max_old_space_size=8500"; \
-    NODE_OPTIONS="--max-old-space-size=8500" && node -e "console.log('Max old space size2 : ' + (require('v8').getHeapStatistics().heap_size_limit / 1024 / 1024).toFixed(2) + ' MB')" 
+    NODE_OPTIONS="--max-old-space-size=8500" node -e "console.log('Max old space size2 : ' + (require('v8').getHeapStatistics().heap_size_limit / 1024 / 1024).toFixed(2) + ' MB')" 
 #     && NODE_VERSION=$(cat /checode-compilation/remote/.npmrc | grep target | cut -d '=' -f 2 | tr -d '"') \
 #     # cache node from this image to avoid to grab it from within the build
 #     NODE_ARCH=$(echo "console.log(process.arch)" | node) \
@@ -158,13 +158,13 @@ RUN if [ "$(uname -m)" = "x86_64" ]; then \
 # Copy VS Code launcher to the container
 #
 #########################################################
-COPY launcher /checode-launcher
-WORKDIR /checode-launcher
-RUN npm install \
-    && mkdir /checode/launcher \
-    && cp -r out/src/*.js /checode/launcher \
-    && chgrp -R 0 /checode && chmod -R g+rwX /checode
+# COPY launcher /checode-launcher
+# WORKDIR /checode-launcher
+# RUN npm install \
+#     && mkdir /checode/launcher \
+#     && cp -r out/src/*.js /checode/launcher \
+#     && chgrp -R 0 /checode && chmod -R g+rwX /checode
 
 # Store the content of the result
-FROM scratch as linux-libc-content
-COPY --from=linux-libc-ubi8-builder /checode /checode-linux-libc/ubi8
+# FROM scratch as linux-libc-content
+# COPY --from=linux-libc-ubi8-builder /checode /checode-linux-libc/ubi8
