@@ -140,6 +140,7 @@ export class ExtensionManagementService extends AbstractExtensionManagementServi
 	}
 
 	async install(vsix: URI, options: InstallOptions = {}): Promise<ILocalExtension> {
+		this.logService.info('///////// INSTALL vsix', options.installPreReleaseVersion);
 		this.logService.trace('ExtensionManagementService#install', vsix.toString());
 
 		const { location, cleanup } = await this.downloadVsix(vsix);
@@ -263,6 +264,7 @@ export class ExtensionManagementService extends AbstractExtensionManagementServi
 	}
 
 	protected createInstallExtensionTask(manifest: IExtensionManifest, extension: URI | IGalleryExtension, options: InstallExtensionTaskOptions): IInstallExtensionTask {
+		this.logService.info(`******** createInstallExtensionTask`, options.installPreReleaseVersion);
 		const extensionKey = extension instanceof URI ? new ExtensionKey({ id: getGalleryExtensionId(manifest.publisher, manifest.name) }, manifest.version) : ExtensionKey.create(extension);
 		return this.instantiationService.createInstance(InstallExtensionInProfileTask, extensionKey, manifest, extension, options, (operation, token) => {
 			if (extension instanceof URI) {

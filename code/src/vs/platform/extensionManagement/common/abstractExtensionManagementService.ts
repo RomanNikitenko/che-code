@@ -176,6 +176,7 @@ export abstract class AbstractExtensionManagementService extends CommontExtensio
 	}
 
 	async installGalleryExtensions(extensions: InstallExtensionInfo[]): Promise<InstallExtensionResult[]> {
+		this.logService.info('///////// INSTALL galery ');
 		if (!this.galleryService.isEnabled()) {
 			throw new ExtensionManagementError(nls.localize('MarketPlaceDisabled', "Marketplace is not enabled"), ExtensionManagementErrorCode.NotAllowed);
 		}
@@ -184,6 +185,7 @@ export abstract class AbstractExtensionManagementService extends CommontExtensio
 		const installableExtensions: InstallableExtension[] = [];
 
 		await Promise.allSettled(extensions.map(async ({ extension, options }) => {
+			this.logService.info('/// INSTALL galery /// installPreReleaseVersion', options?.installPreReleaseVersion);
 			try {
 				const compatible = await this.checkAndGetCompatibleVersion(extension, !!options?.installGivenVersion, !!options?.installPreReleaseVersion, options.productVersion ?? { version: this.productService.version, date: this.productService.date });
 				installableExtensions.push({ ...compatible, options });
@@ -309,8 +311,8 @@ export abstract class AbstractExtensionManagementService extends CommontExtensio
 			installingExtensionsMap.set(key, { task: installExtensionTask, root });
 			this._onInstallExtension.fire({ identifier: installExtensionTask.identifier, source: extension, profileLocation: options.profileLocation });
 			this.logService.info('+++++++++++ Installing extension:', installExtensionTask.identifier.id, options);
-			this.logService.info('preRelease :', options.preRelease);
-			this.logService.info('installPreReleaseVersion :', options.installPreReleaseVersion);
+			this.logService.info('+++ preRelease :', options.preRelease);
+			this.logService.info('+++ installPreReleaseVersion :', options.installPreReleaseVersion);
 			// only cache gallery extensions tasks
 			if (!URI.isUri(extension)) {
 				this.installingExtensions.set(getInstallExtensionTaskKey(extension, options.profileLocation), { task: installExtensionTask, waitingTasks: [] });

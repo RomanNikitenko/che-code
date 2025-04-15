@@ -100,6 +100,7 @@ export class WebExtensionManagementService extends AbstractExtensionManagementSe
 	}
 
 	async install(location: URI, options: InstallOptions = {}): Promise<ILocalExtension> {
+		this.logService.info('///////// INSTALL location ', options.installPreReleaseVersion);
 		this.logService.trace('ExtensionManagementService#install', location.toString());
 		const manifest = await this.webExtensionsScannerService.scanExtensionManifest(location);
 		if (!manifest || !manifest.name || !manifest.version) {

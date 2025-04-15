@@ -1915,6 +1915,7 @@ export class ExtensionsWorkbenchService extends Disposable implements IExtension
 				});
 			}
 		});
+		this.logService.info('+++++ Extensions SERVICE +++ before installGalleryExtensions ', this.preferPreReleases);
 		return this.extensionManagementService.installGalleryExtensions(toUpdate);
 	}
 
