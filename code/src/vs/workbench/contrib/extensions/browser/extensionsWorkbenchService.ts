@@ -927,7 +927,7 @@ export class ExtensionsWorkbenchService extends Disposable implements IExtension
 	private readonly _onReset = new Emitter<void>();
 	get onReset() { return this._onReset.event; }
 
-	readonly preferPreReleases = this.productService.quality !== 'stable';
+	readonly preferPreReleases: boolean = false;
 
 	private installing: IExtension[] = [];
 	private tasksInProgress: CancelablePromise<any>[] = [];
@@ -972,9 +972,11 @@ export class ExtensionsWorkbenchService extends Disposable implements IExtension
 	) {
 		super();
 		const preferPreReleasesValue = configurationService.getValue('_extensions.preferPreReleases');
+		this.logService.info('==== ++++++ Constructor ++++ before ', this.preferPreReleases);
 		if (!isUndefined(preferPreReleasesValue)) {
 			this.preferPreReleases = !!preferPreReleasesValue;
 		}
+		this.logService.info('==== ++++++ Constructor ++++ after ', this.preferPreReleases);
 		this.hasOutdatedExtensionsContextKey = HasOutdatedExtensionsContext.bindTo(contextKeyService);
 		if (extensionManagementServerService.localExtensionManagementServer) {
 			this.localExtensions = this._register(instantiationService.createInstance(Extensions,
@@ -1320,6 +1322,7 @@ export class ExtensionsWorkbenchService extends Disposable implements IExtension
 	queryGallery(token: CancellationToken): Promise<IPager<IExtension>>;
 	queryGallery(options: IQueryOptions, token: CancellationToken): Promise<IPager<IExtension>>;
 	async queryGallery(arg1: any, arg2?: any): Promise<IPager<IExtension>> {
+		this.logService.info('==== ++++++ queryGallery ++++');
 		if (!this.galleryService.isEnabled()) {
 			return singlePagePager([]);
 		}
@@ -1327,7 +1330,11 @@ export class ExtensionsWorkbenchService extends Disposable implements IExtension
 		const options: IQueryOptions = CancellationToken.isCancellationToken(arg1) ? {} : arg1;
 		const token: CancellationToken = CancellationToken.isCancellationToken(arg1) ? arg1 : arg2;
 		options.text = options.text ? this.resolveQueryText(options.text) : options.text;
+		this.logService.info('==== ++++++ queryGallery ++++');
+		this.logService.info('queryGallery ++++ ', options.includePreRelease);
+		this.logService.info('queryGallery ++++ ', this.preferPreReleases);
 		options.includePreRelease = isUndefined(options.includePreRelease) ? this.preferPreReleases : options.includePreRelease;
+
 
 		const extensionsControlManifest = await this.extensionManagementService.getExtensionsControlManifest();
 		const pager = await this.galleryService.query(options, token);
@@ -2329,6 +2336,10 @@ export class ExtensionsWorkbenchService extends Disposable implements IExtension
 	}
 
 	async install(arg: string | URI | IExtension, installOptions: InstallExtensionOptions = {}, progressLocation?: ProgressLocation | string): Promise<IExtension> {
+		console.info('==================+++++ Extensions SERVICE +++ ');
+		console.info('+++++ Extensions SERVICE +++ installOptions.installPreReleaseVersion ', installOptions.installPreReleaseVersion);
+		console.info('+++++ Extensions SERVICE +++ this.preferPreReleases ', this.preferPreReleases);
+		this.logService.info('==================+++++ Extensions SERVICE +++ ', this.preferPreReleases);
 		let installable: URI | IGalleryExtension | IResourceExtension | undefined;
 		let extension: IExtension | undefined;
 

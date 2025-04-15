@@ -546,6 +546,7 @@ export class InstallAction extends ExtensionAction {
 			}
 		}
 
+		console.error('+++++ INSTALL Action +++ ', this.options.installPreReleaseVersion);
 		this.extensionsWorkbenchService.open(this.extension, { showPreReleaseVersion: this.options.installPreReleaseVersion });
 
 		alert(localize('installExtensionStart', "Installing extension {0} started. An editor is now open with more details on this extension", this.extension.displayName));
@@ -634,6 +635,7 @@ export class InstallAction extends ExtensionAction {
 			return localize('install workspace version', "Install Workspace Extension");
 		}
 		/* install pre-release version */
+		console.error('+++++ INSTALL Action get label +++ ', this.options.installPreReleaseVersion);
 		if (this.options.installPreReleaseVersion && this.extension?.hasPreReleaseVersion) {
 			return primary ? localize('install pre-release', "Install Pre-Release") : localize('install pre-release version', "Install Pre-Release Version");
 		}
@@ -994,6 +996,7 @@ export class UpdateAction extends ExtensionAction {
 	}
 
 	private async install(extension: IExtension): Promise<void> {
+		console.error('+++++ INSTALL Action INSTALL +++ ', extension.local?.preRelease);
 		const options = extension.local?.preRelease ? { installPreReleaseVersion: true } : undefined;
 		try {
 			await this.extensionsWorkbenchService.install(extension, options);
