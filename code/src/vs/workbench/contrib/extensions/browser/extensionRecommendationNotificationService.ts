@@ -280,6 +280,7 @@ export class ExtensionRecommendationNotificationService extends Disposable imple
 		{ onDidInstallRecommendedExtensions, onDidShowRecommendedExtensions, onDidCancelRecommendedExtensions, onDidNeverShowRecommendedExtensionsAgain }: RecommendationsNotificationActions): CancelablePromise<RecommendationsNotificationResult> {
 		return createCancelablePromise<RecommendationsNotificationResult>(async token => {
 			if (this.hasToInstallRecommendedExtensionsAutomatically()) {
+				console.log('hasToInstallRecommendedExtensionsAutomatically ');
 				this.extensionManagementService.installGalleryExtensions(extensions.map(e => ({ extension: e.gallery!, options: { } })))
 				return RecommendationsNotificationResult.Accepted;
 			}

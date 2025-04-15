@@ -443,6 +443,7 @@ export class ExtensionManagementService extends Disposable implements IWorkbench
 	}
 
 	async installGalleryExtensions(extensions: InstallExtensionInfo[]): Promise<InstallExtensionResult[]> {
+		this.logService.info(`******* installGalleryExtensions`);
 		const results = new Map<string, InstallExtensionResult>();
 
 		const extensionsByServer = new Map<IExtensionManagementServer, InstallExtensionInfo[]>();
