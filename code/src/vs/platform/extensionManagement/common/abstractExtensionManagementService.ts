@@ -308,7 +308,9 @@ export abstract class AbstractExtensionManagementService extends CommontExtensio
 			const key = `${getGalleryExtensionId(manifest.publisher, manifest.name)}-${options.profileLocation.toString()}`;
 			installingExtensionsMap.set(key, { task: installExtensionTask, root });
 			this._onInstallExtension.fire({ identifier: installExtensionTask.identifier, source: extension, profileLocation: options.profileLocation });
-			this.logService.info('Installing extension:', installExtensionTask.identifier.id, options);
+			this.logService.info('+++++++++++ Installing extension:', installExtensionTask.identifier.id, options);
+			this.logService.info('preRelease :', options.preRelease);
+			this.logService.info('installPreReleaseVersion :', options.installPreReleaseVersion);
 			// only cache gallery extensions tasks
 			if (!URI.isUri(extension)) {
 				this.installingExtensions.set(getInstallExtensionTaskKey(extension, options.profileLocation), { task: installExtensionTask, waitingTasks: [] });
