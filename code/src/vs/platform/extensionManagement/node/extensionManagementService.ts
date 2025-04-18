@@ -329,21 +329,34 @@ export class ExtensionManagementService extends AbstractExtensionManagementServi
 	}
 
 	private async downloadExtension(extension: IGalleryExtension, operation: InstallOperation, verifySignature: boolean, clientTargetPlatform?: TargetPlatform): Promise<{ readonly location: URI; readonly verificationStatus: ExtensionSignatureVerificationCode | undefined }> {
+		console.log(' ++++++++++++++++++++++++++ ');
+		console.log('+++ verifySignature ', verifySignature);
 		if (verifySignature) {
 			const value = this.configurationService.getValue('extensions.verifySignature');
+			console.log('+++ config service value ', value);
 			verifySignature = isBoolean(value) ? value : true;
 		}
 		const { location, verificationStatus } = await this.extensionsDownloader.download(extension, operation, verifySignature, clientTargetPlatform);
 		const shouldRequireSignature = (await this.extensionGalleryManifestService.getExtensionGalleryManifest())?.capabilities.signing?.allRepositorySigned;
+
+		console.log('+++ verificationStatus ', verificationStatus);
+		console.log('+++ this.environmentService.isBuilt ', this.environmentService.isBuilt);
+		console.log('+++ this.productService.quality ', this.productService.quality);
+		if (!(isLinux && this.productService.quality === 'stable')) {
+			console.log('+++ NOT (isLinux && this.productService.quality === stable ');
+		} else {
+			console.log('+++ IS (isLinux && this.productService.quality === stable ');
+		}
 
 		if (
 			verificationStatus !== ExtensionSignatureVerificationCode.Success
 			&& !(verificationStatus === ExtensionSignatureVerificationCode.NotSigned && !shouldRequireSignature)
 			&& verifySignature
 			&& this.environmentService.isBuilt
-			&& !(isLinux && this.productService.quality === 'stable')
+			&& !isLinux
 		) {
 			try {
+				console.log('+++ DELETE ');
 				await this.extensionsDownloader.delete(location);
 			} catch (e) {
 				/* Ignore */
@@ -370,6 +383,8 @@ export class ExtensionManagementService extends AbstractExtensionManagementServi
 			}
 
 			throw new ExtensionManagementError(nls.localize('signature verification failed', "Signature verification failed with '{0}' error.", verificationStatus), ExtensionManagementErrorCode.SignatureVerificationInternal);
+		} else {
+			console.log('+++ NOT DELETE ');
 		}
 
 		return { location, verificationStatus };
