@@ -7,7 +7,7 @@
 #
 
 # Make an assembly including both musl and libc variant to be able to run on all linux systems
-FROM docker.io/node:20-alpine3.19 as linux-musl-builder
+FROM docker.io/node:20-alpine3.20 as linux-musl-builder
 
 RUN apk add --update --no-cache \
     # Download some files
@@ -58,7 +58,7 @@ RUN NODE_VERSION=$(cat /checode-compilation/remote/.npmrc | grep target | cut -d
     # workaround to fix build
     && cp -r /checode-compilation/node_modules/tslib /checode-compilation/remote/node_modules/
 
-RUN NODE_OPTIONS="--max-old-space-size=6500" ./node_modules/.bin/gulp vscode-reh-web-linux-alpine-min
+RUN NODE_OPTIONS="--max-old-space-size=4096" ./node_modules/.bin/gulp vscode-reh-web-linux-alpine-min
 RUN cp -r ../vscode-reh-web-linux-alpine /checode
 
 RUN chmod a+x /checode/out/server-main.js \

@@ -62,16 +62,24 @@ export class ExtensionsDownloader extends Disposable {
 	}
 
 	async download(extension: IGalleryExtension, operation: InstallOperation, verifySignature: boolean, clientTargetPlatform?: TargetPlatform): Promise<{ readonly location: URI; readonly verificationStatus: ExtensionSignatureVerificationCode | undefined }> {
+		console.log('======+++++++++++++++ DOWNLOAD ===');
 		await this.cleanUpPromise;
 
 		const location = await this.downloadVSIX(extension, operation);
 
+		console.log('=== DOWNLOAD === location ', location);
 		if (!verifySignature) {
+			console.log('=== DOWNLOAD === !verifySignature ');
 			return { location, verificationStatus: undefined };
+		} else {
+			console.log('=== DOWNLOAD === verifySignature ');
 		}
 
 		if (!extension.isSigned) {
+			console.log('=== DOWNLOAD === !extension.isSigned');
 			return { location, verificationStatus: ExtensionSignatureVerificationCode.NotSigned };
+		} else {
+			console.log('=== DOWNLOAD === extension.isSigned');
 		}
 
 		let signatureArchiveLocation;

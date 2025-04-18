@@ -7,7 +7,7 @@
 #
 
 # https://registry.access.redhat.com/ubi8/nodejs-20
-FROM registry.access.redhat.com/ubi8/nodejs-20:1-72 as linux-libc-ubi8-builder
+FROM registry.access.redhat.com/ubi8/nodejs-20:1-73.1742991506 as linux-libc-ubi8-builder
 
 USER root
 
@@ -77,7 +77,7 @@ RUN NODE_ARCH=$(echo "console.log(process.arch)" | node) \
     && mkdir -p /checode-compilation/.build/node/v${NODE_VERSION}/linux-${NODE_ARCH} \
     && echo "caching /checode-compilation/.build/node/v${NODE_VERSION}/linux-${NODE_ARCH}/node" \
     && cp /usr/bin/node /checode-compilation/.build/node/v${NODE_VERSION}/linux-${NODE_ARCH}/node \
-    && NODE_OPTIONS="--max-old-space-size=8500" ./node_modules/.bin/gulp vscode-reh-web-linux-${NODE_ARCH}-min \
+    && NODE_OPTIONS="--max-old-space-size=4096" ./node_modules/.bin/gulp vscode-reh-web-linux-${NODE_ARCH}-min \
     && cp -r ../vscode-reh-web-linux-${NODE_ARCH} /checode
 
 RUN chmod a+x /checode/out/server-main.js \

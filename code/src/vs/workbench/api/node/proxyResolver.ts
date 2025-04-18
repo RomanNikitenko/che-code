@@ -71,7 +71,7 @@ export function connectProxyResolver(
 			}
 		},
 		proxyResolveTelemetry: () => { },
-		useHostProxy: isUseHostProxyEnabled(),
+		isUseHostProxyEnabled,
 		loadAdditionalCertificates: async () => {
 			const promises: Promise<string[]>[] = [];
 			if (initData.remote.isRemote) {
@@ -223,9 +223,9 @@ const fetchFeatureUse: FetchFeatureUseEvent = {
 };
 
 let timer: NodeJS.Timeout | undefined;
-
+const enableFeatureUseTelemetry = false;
 function recordFetchFeatureUse(mainThreadTelemetry: MainThreadTelemetryShape, feature: keyof typeof fetchFeatureUse) {
-	if (!fetchFeatureUse[feature]++) {
+	if (enableFeatureUseTelemetry && !fetchFeatureUse[feature]++) {
 		if (timer) {
 			clearTimeout(timer);
 		}
@@ -394,9 +394,9 @@ type ProxyAuthenticationEvent = {
 };
 
 let telemetrySent = false;
-
+const enableProxyAuthenticationTelemetry = false;
 function sendTelemetry(mainThreadTelemetry: MainThreadTelemetryShape, authenticate: string[], isRemote: boolean) {
-	if (telemetrySent || !authenticate.length) {
+	if (!enableProxyAuthenticationTelemetry || telemetrySent || !authenticate.length) {
 		return;
 	}
 	telemetrySent = true;
