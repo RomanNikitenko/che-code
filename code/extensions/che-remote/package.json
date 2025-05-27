@@ -32,7 +32,7 @@
   },
   "dependencies": {
     "vscode-nls": "^5.0.0",
-    "axios": "^1.7.4",
+    "axios": "1.7.7",
     "@eclipse-che/che-devworkspace-generator": "7.99.0-next-aef9b62",
     "fs-extra": "^11.2.0",
     "https": "^1.0.0",
@@ -46,6 +46,11 @@
     "@types/js-yaml": "^4.0.5",
     "@types/node": "20.x",
     "eslint": "^8.0.0"
+  },
+  "overrides": {
+    "@eclipse-che/che-devworkspace-generator": {
+      "axios": "1.7.7"
+    }
   },
   "repository": {
     "type": "git",
