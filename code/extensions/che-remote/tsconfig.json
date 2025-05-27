@@ -3,6 +3,7 @@
 	"compilerOptions": {
 		"outDir": "./out",
 		"experimentalDecorators": true,
+		"skipLibCheck": true,
 		"emitDecoratorMetadata": true,
 		"esModuleInterop": true,
 		"types": [
