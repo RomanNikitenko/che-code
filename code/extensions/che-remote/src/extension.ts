@@ -14,7 +14,7 @@
 import { Main as DevWorkspaceGenerator } from '@eclipse-che/che-devworkspace-generator/lib/main';
 import * as fs from 'fs-extra';
 import * as vscode from 'vscode';
-import { axiosInstance } from './axios-certificate-authority';
+import axios from 'axios';
 import * as path from 'path';
 import { DevfileContext } from '@eclipse-che/che-devworkspace-generator/lib/api/devfile-context';
 import * as jsYaml from 'js-yaml';
@@ -178,20 +178,15 @@ async function updateDevfile(cheApi: any): Promise<boolean> {
 
   const action = await vscode.window.showInformationMessage(
     'Workspace restart', {
-      modal: true, detail: `Your workspace will be restarted from ${devfilePath}. This action is not revertable.`
-    }, 'Restart');
+    modal: true, detail: `Your workspace will be restarted from ${devfilePath}. This action is not revertable.`
+  }, 'Restart');
   if ('Restart' !== action) {
     return false;
   }
 
   let devfileContext: DevfileContext | undefined = undefined;
   try {
-    devfileContext = await devWorkspaceGenerator.generateDevfileContext(
-      {
-        devfilePath,
-        editorContent: EDITOR_CONTENT_STUB,
-        projects: []
-      }, axiosInstance);
+    devfileContext = await devWorkspaceGenerator.generateDevfileContext({ devfilePath, editorContent: EDITOR_CONTENT_STUB, projects: [] }, axios.create());
   } catch (error) {
     const action = await vscode.window.showErrorMessage('Failed to generate new Devfile Context.', {
       modal: true,
