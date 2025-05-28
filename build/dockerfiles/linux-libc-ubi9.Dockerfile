@@ -9,6 +9,8 @@
 # https://registry.access.redhat.com/ubi9/nodejs-20
 FROM registry.access.redhat.com/ubi9/nodejs-20:9.5-1743584090 as linux-libc-ubi9-builder
 
+RUN node -v
+
 USER root
 
 # Export GITHUB_TOKEN into environment variable
@@ -56,6 +58,7 @@ RUN { if [[ $(uname -m) == "s390x" ]]; then LIBSECRET="\
 # Copy Che-Code to the container
 #
 #########################################################
+RUN node -v
 COPY code /checode-compilation
 WORKDIR /checode-compilation
 ENV ELECTRON_SKIP_BINARY_DOWNLOAD=1 \
