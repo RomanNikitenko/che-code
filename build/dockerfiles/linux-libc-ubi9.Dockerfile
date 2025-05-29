@@ -72,7 +72,7 @@ RUN npm config set fetch-retry-mintimeout 100000 && npm config set fetch-retry-m
 RUN node -v 
 
 # Grab dependencies (and force to rebuild them)
-RUN rm -rf /checode-compilation/node_modules && npm install --force
+RUN mkdir -p /opt/app-root/src/.npm-global/lib && rm -rf /checode-compilation/node_modules && npm install --force
 
 # Compile
 RUN NODE_ARCH=$(echo "console.log(process.arch)" | node) \
