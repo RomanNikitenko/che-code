@@ -7,7 +7,9 @@
 #
 
 # https://registry.access.redhat.com/ubi9/nodejs-20
-FROM registry.access.redhat.com/ubi9/nodejs-20:9.5-1743584090 as linux-libc-ubi9-builder
+FROM registry.access.redhat.com/ubi9/nodejs-20:9.6-1748365803 as linux-libc-ubi9-builder
+
+RUN node -v
 
 USER root
 
@@ -56,6 +58,7 @@ RUN { if [[ $(uname -m) == "s390x" ]]; then LIBSECRET="\
 # Copy Che-Code to the container
 #
 #########################################################
+RUN node -v
 COPY code /checode-compilation
 WORKDIR /checode-compilation
 ENV ELECTRON_SKIP_BINARY_DOWNLOAD=1 \
@@ -66,9 +69,10 @@ RUN git init .
 
 # change network timeout (slow using multi-arch build)
 RUN npm config set fetch-retry-mintimeout 100000 && npm config set fetch-retry-maxtimeout 600000
+RUN node -v 
 
 # Grab dependencies (and force to rebuild them)
-RUN rm -rf /checode-compilation/node_modules && npm install --force
+RUN mkdir -p /opt/app-root/src/.npm-global/lib && rm -rf /checode-compilation/node_modules && npm install --force
 
 # Compile
 RUN NODE_ARCH=$(echo "console.log(process.arch)" | node) \
