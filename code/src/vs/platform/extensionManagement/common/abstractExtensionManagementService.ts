@@ -62,7 +62,7 @@ export abstract class CommontExtensionManagementService extends Disposable imple
 
 	_serviceBrand: undefined;
 
-	readonly preferPreReleases: boolean;
+	readonly preferPreReleases: boolean = true;
 
 	constructor(
 		@IProductService protected readonly productService: IProductService,
