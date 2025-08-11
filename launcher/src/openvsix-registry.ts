@@ -66,6 +66,11 @@ export class OpenVSIXRegistry {
       productJSON.setExtensionsGalleryItemURL(newItemURL);
       await productJSON.save();
 
+      console.error('========================= ++++++++ ');
+      console.error('serviceURL ', serviceURL);
+      console.error('newServiceURL ', newServiceURL);
+      console.error('itemURL ', itemURL);
+      console.error('newItemURL ', newItemURL);
       await this.update(FILE_WORKBENCH, serviceURL, newServiceURL, itemURL, newItemURL);
     } catch (err) {
       console.error(`${err.message} Failure to configure OpenVSIX registry.`);
