@@ -58,9 +58,11 @@ export class OpenVSIXRegistry {
 
       const serviceURL = productJSON.getExtensionsGalleryServiceURL();
       const itemURL = productJSON.getExtensionsGalleryItemURL();
+      const extensionUrlTemplate = productJSON.getExtensionUrlTemplate();
 
       const newServiceURL = `${openvsxURL}/gallery`;
       const newItemURL = `${openvsxURL}/item`;
+      const newExtensionUrlTemplate = `${openvsxURL}/vscode/gallery/{publisher}/{name}/latest`;
 
       productJSON.setExtensionsGalleryServiceURL(newServiceURL);
       productJSON.setExtensionsGalleryItemURL(newItemURL);
@@ -71,7 +73,17 @@ export class OpenVSIXRegistry {
       console.error('newServiceURL ', newServiceURL);
       console.error('itemURL ', itemURL);
       console.error('newItemURL ', newItemURL);
-      await this.update(FILE_WORKBENCH, serviceURL, newServiceURL, itemURL, newItemURL);
+      console.error('extensionUrlTemplate ', extensionUrlTemplate);
+      console.error('newExtensionUrlTemplate ', newExtensionUrlTemplate);
+      await this.update(
+        FILE_WORKBENCH,
+        serviceURL,
+        newServiceURL,
+        itemURL,
+        newItemURL,
+        extensionUrlTemplate,
+        newExtensionUrlTemplate
+      );
     } catch (err) {
       console.error(`${err.message} Failure to configure OpenVSIX registry.`);
     }
@@ -82,12 +94,14 @@ export class OpenVSIXRegistry {
     currentServiceURL: string,
     newServiceURL: string,
     currentItemURL: string,
-    newItemURL: string
+    newItemURL: string,
+    currentExtensionUrlTemplate: string,
+    newExtensionUrlTemplate: string
   ): Promise<void> {
     const content = await fs.readFile(file);
     const newContent = content.replace(
-      `extensionsGallery:{serviceUrl:"${currentServiceURL}",itemUrl:"${currentItemURL}"}`,
-      `extensionsGallery:{serviceUrl:"${newServiceURL}",itemUrl:"${newItemURL}"}`
+      `extensionsGallery:{serviceUrl:"${currentServiceURL}",itemUrl:"${currentItemURL}",extensionUrlTemplate:"${currentExtensionUrlTemplate}"}`,
+      `extensionsGallery:{serviceUrl:"${newServiceURL}",itemUrl:"${newItemURL}",extensionUrlTemplate:"${newExtensionUrlTemplate}"}`
     );
     await fs.writeFile(file, newContent);
   }

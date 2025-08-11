@@ -100,6 +100,31 @@ export class ProductJSON {
     gallery.itemUrl = url;
   }
 
+  getExtensionUrlTemplate(): string {
+    const gallery = this.product.extensionsGallery;
+    if (!gallery) {
+      throw new Error('Failure to find .extensionsGallery.serviceUrl in product.json.');
+    }
+
+    const template = gallery.extensionUrlTemplate;
+
+    if (!template) {
+      throw new Error('Failure to find .extensionsGallery.extensionUrlTemplate in product.json.');
+    }
+
+    return template;
+  }
+
+  setExtensionUrlTemplate(template: string): void {
+    let gallery = this.product.extensionsGallery;
+    if (!gallery) {
+      gallery = {};
+      this.product.extensionsGallery = gallery;
+    }
+
+    gallery.extensionUrlTemplate = template;
+  }
+
   getTrustedExtensionAuthAccess(): string[] | Record | undefined {
     return this.product.trustedExtensionAuthAccess;
   }
