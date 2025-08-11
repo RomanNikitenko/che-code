@@ -100,8 +100,8 @@ export class OpenVSIXRegistry {
   ): Promise<void> {
     const content = await fs.readFile(file);
     const newContent = content.replace(
-      `extensionsGallery:{serviceUrl:"${currentServiceURL}",itemUrl:"${currentItemURL}",extensionUrlTemplate:"${currentExtensionUrlTemplate}"}`,
-      `extensionsGallery:{serviceUrl:"${newServiceURL}",itemUrl:"${newItemURL}",extensionUrlTemplate:"${newExtensionUrlTemplate}"}`
+      `extensionsGallery:{serviceUrl:"${currentServiceURL}",itemUrl:"${currentItemURL}",extensionUrlTemplate:"${currentExtensionUrlTemplate}","controlUrl": "https://raw.githubusercontent.com/EclipseFdn/publish-extensions/refs/heads/master/extension-control/extensions.json"}`,
+      `extensionsGallery:{serviceUrl:"${newServiceURL}",itemUrl:"${newItemURL}",extensionUrlTemplate:"${newExtensionUrlTemplate}","controlUrl": "https://raw.githubusercontent.com/EclipseFdn/publish-extensions/refs/heads/master/extension-control/extensions.json"}`
     );
     await fs.writeFile(file, newContent);
   }
