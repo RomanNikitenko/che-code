@@ -62,7 +62,7 @@ export class OpenVSIXRegistry {
 
       const newServiceURL = `${openvsxURL}/gallery`;
       const newItemURL = `${openvsxURL}/item`;
-      const newExtensionUrlTemplate = `${openvsxURL}/vscode/gallery/{publisher}/{name}/latest`;
+      const newExtensionUrlTemplate = `${openvsxURL}/gallery/{publisher}/{name}/latest`;
 
       productJSON.setExtensionsGalleryServiceURL(newServiceURL);
       productJSON.setExtensionsGalleryItemURL(newItemURL);
