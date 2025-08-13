@@ -32,7 +32,7 @@ export class VSCodeLauncher {
 
     const host = env.CODE_HOST || '127.0.0.1';
 
-    const params = ['out/server-main.js', '--host', host, '--port', '3100', '--without-connection-token'];
+    const params = ['out/server-main.js', '--host', host, '--port', '3100', '--without-connection-token', '--user-data-dir', '/projects'];
 
     if (workspaceFile) {
       params.push('--default-workspace', workspaceFile);
