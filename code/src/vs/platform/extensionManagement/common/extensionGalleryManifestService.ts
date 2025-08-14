@@ -35,6 +35,7 @@ export class ExtensionGalleryManifestService extends Disposable implements IExte
 	}
 
 	async getExtensionGalleryManifest(): Promise<IExtensionGalleryManifest | null> {
+		console.info('/////++++++ getExtensionGalleryManifest ');
 		const extensionsGallery = this.productService.extensionsGallery as ExtensionGalleryConfig | undefined;
 		if (!extensionsGallery?.serviceUrl) {
 			return null;

@@ -69,6 +69,7 @@ export class ExtensionsResourceInitializer implements IProfileResourceInitialize
 			}
 		}
 		if (extensionsToInstall.length) {
+			console.info('===== qqqq extensionGalleryService.getExtensions');
 			const galleryExtensions = await this.extensionGalleryService.getExtensions(extensionsToInstall.map(e => ({ ...e.identifier, version: e.version, hasPreRelease: e.version ? undefined : e.preRelease })), CancellationToken.None);
 			await Promise.all(extensionsToInstall.map(async e => {
 				const extension = galleryExtensions.find(galleryExtension => areSameExtensions(galleryExtension.identifier, e.identifier));
@@ -147,6 +148,7 @@ export class ExtensionsResource implements IProfileResource {
 			}
 			if (extensionsToInstall.length) {
 				this.logService.info(`Importing Profile (${profile.name}): Started installing extensions.`);
+				console.info('===== ttttextensionGalleryService.getExtensions');
 				const galleryExtensions = await this.extensionGalleryService.getExtensions(extensionsToInstall.map(e => ({ ...e.identifier, version: e.version, hasPreRelease: e.version ? undefined : e.preRelease })), CancellationToken.None);
 				const installExtensionInfos: InstallExtensionInfo[] = [];
 				await Promise.all(extensionsToInstall.map(async e => {

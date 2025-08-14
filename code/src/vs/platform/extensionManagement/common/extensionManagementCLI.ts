@@ -138,6 +138,7 @@ export class ExtensionManagementCLI {
 		}
 
 		this.logger.trace(localize({ key: 'updateExtensionsQuery', comment: ['Placeholder is for the count of extensions'] }, "Fetching latest versions for {0} extensions", installedExtensionsQuery.length));
+		console.info('//// BEFORE 777 getExtensions ');
 		const availableVersions = await this.extensionGalleryService.getExtensions(installedExtensionsQuery, { compatible: true }, CancellationToken.None);
 
 		const extensionsToUpdate: InstallExtensionInfo[] = [];
@@ -280,6 +281,7 @@ export class ExtensionManagementCLI {
 			}
 		}
 		if (extensionInfos.length) {
+			console.info('//// BEFORE 888 getExtensions ');
 			const result = await this.extensionGalleryService.getExtensions(extensionInfos, { targetPlatform }, CancellationToken.None);
 			for (const extension of result) {
 				galleryExtensions.set(extension.identifier.id.toLowerCase(), extension);

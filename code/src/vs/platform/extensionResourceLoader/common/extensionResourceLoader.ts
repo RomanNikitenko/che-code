@@ -108,7 +108,9 @@ export abstract class AbstractExtensionResourceLoaderService extends Disposable 
 
 	public async getExtensionGalleryResourceURL({ publisher, name, version, targetPlatform }: { publisher: string; name: string; version: string; targetPlatform?: TargetPlatform }, path?: string): Promise<URI | undefined> {
 		await this._initPromise;
+		console.info('+++++++++++ getExtensionGalleryResourceURL ');
 		if (this._extensionGalleryResourceUrlTemplate) {
+			console.info('+++ getExtensionGalleryResourceURL +++ this._extensionGalleryResourceUrlTemplate ', this._extensionGalleryResourceUrlTemplate);
 			const uri = URI.parse(format2(this._extensionGalleryResourceUrlTemplate, {
 				publisher,
 				name,
@@ -121,6 +123,8 @@ export abstract class AbstractExtensionResourceLoaderService extends Disposable 
 				path: 'extension'
 			}));
 			return this._isWebExtensionResourceEndPoint(uri) ? uri.with({ scheme: RemoteAuthorities.getPreferredWebSchema() }) : uri;
+		} else {
+			console.info('+++ getExtensionGalleryResourceURL +++ NO this._extensionGalleryResourceUrlTemplate ');
 		}
 		return undefined;
 	}

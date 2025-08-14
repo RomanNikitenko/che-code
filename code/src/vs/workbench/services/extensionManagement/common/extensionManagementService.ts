@@ -980,6 +980,7 @@ export class ExtensionManagementService extends CommontExtensionManagementServic
 			return;
 		}
 
+		console.info('//// BEFORE 26 getExtensions ');
 		const extensions = await this.extensionGalleryService.getExtensions(toGet.map(id => ({ id })), token);
 		for (let idx = 0; idx < extensions.length; idx++) {
 			const extension = extensions[idx];
@@ -1031,6 +1032,7 @@ export class ExtensionManagementService extends CommontExtensionManagementServic
 
 		const nonWebExtensions = [];
 		if (manifest.extensionPack?.length) {
+			console.info('//// BEFORE 27 getExtensions ');
 			const extensions = await this.extensionGalleryService.getExtensions(manifest.extensionPack.map(id => ({ id })), CancellationToken.None);
 			for (const extension of extensions) {
 				if (await this.servers[0].extensionManagementService.canInstall(extension) !== true) {

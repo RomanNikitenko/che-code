@@ -372,6 +372,7 @@ class NewExtensionsInitializer implements IUserDataSyncResourceInitializer {
 
 		const newlyEnabledExtensions: ILocalExtension[] = [];
 		const targetPlatform = await this.extensionManagementService.getTargetPlatform();
+		console.info('//// BEFORE 2999 getExtensions ');
 		const galleryExtensions = await this.galleryService.getExtensions(preview.newExtensions, { targetPlatform, compatible: true }, CancellationToken.None);
 		for (const galleryExtension of galleryExtensions) {
 			try {

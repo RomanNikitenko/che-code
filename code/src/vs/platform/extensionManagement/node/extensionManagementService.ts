@@ -344,7 +344,9 @@ export class ExtensionManagementService extends AbstractExtensionManagementServi
 			verifySignature = isBoolean(value) ? value : true;
 		}
 		const { location, verificationStatus } = await this.extensionsDownloader.download(extension, operation, verifySignature, clientTargetPlatform);
-		const shouldRequireSignature = shouldRequireRepositorySignatureFor(extension.private, await this.extensionGalleryManifestService.getExtensionGalleryManifest());
+		const manifest = await this.extensionGalleryManifestService.getExtensionGalleryManifest();
+		console.info('///////////// ++++++ downloadExtension ', manifest);
+		const shouldRequireSignature = shouldRequireRepositorySignatureFor(extension.private, manifest);
 
 		if (
 			verificationStatus !== ExtensionSignatureVerificationCode.Success
@@ -1155,8 +1157,10 @@ class InstallExtensionInProfileTask extends AbstractExtensionTask<ILocalExtensio
 
 	private async updateMetadata(extension: ILocalExtension, token: CancellationToken): Promise<void> {
 		try {
+			console.info('//// BEFORE 10 getExtensions ');
 			let [galleryExtension] = await this.galleryService.getExtensions([{ id: extension.identifier.id, version: extension.manifest.version }], token);
 			if (!galleryExtension) {
+				console.info('//// BEFORE 11 getExtensions ');
 				[galleryExtension] = await this.galleryService.getExtensions([{ id: extension.identifier.id }], token);
 			}
 			if (galleryExtension) {

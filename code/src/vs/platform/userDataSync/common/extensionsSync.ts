@@ -445,6 +445,7 @@ export class LocalExtensionsProvider {
 
 					// User Extension Sync: Install/Update, Enablement & State
 					const version = e.pinned ? e.version : undefined;
+					console.info('//// BEFORE 12 getExtensions ');
 					const extension = (await this.extensionGalleryService.getExtensions([{ ...e.identifier, version, preRelease: version ? undefined : e.preRelease }], CancellationToken.None))[0];
 
 					/* Update extension state only if

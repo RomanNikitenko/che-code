@@ -262,6 +262,7 @@ export class PromptExtensionInstallFailureAction extends Action {
 			return undefined;
 		}
 
+		console.info('//// BEFORE 14 getExtensions ');
 		const [extension] = await this.galleryService.getExtensions([{
 			...this.extension.identifier,
 			version: this.version
@@ -3077,6 +3078,7 @@ export class InstallLocalExtensionsInRemoteAction extends AbstractInstallExtensi
 		const targetPlatform = await this.extensionManagementServerService.remoteExtensionManagementServer!.extensionManagementService.getTargetPlatform();
 		await Promises.settled(localExtensionsToInstall.map(async extension => {
 			if (this.extensionGalleryService.isEnabled()) {
+				console.info('//// BEFORE 15 getExtensions ');
 				const gallery = (await this.extensionGalleryService.getExtensions([{ ...extension.identifier, preRelease: !!extension.local?.preRelease }], { targetPlatform, compatible: true }, CancellationToken.None))[0];
 				if (gallery) {
 					galleryExtensions.push(gallery);
@@ -3136,6 +3138,7 @@ export class InstallRemoteExtensionsInLocalAction extends AbstractInstallExtensi
 		const targetPlatform = await this.extensionManagementServerService.localExtensionManagementServer!.extensionManagementService.getTargetPlatform();
 		await Promises.settled(extensions.map(async extension => {
 			if (this.extensionGalleryService.isEnabled()) {
+				console.info('//// BEFORE 16 getExtensions ');
 				const gallery = (await this.extensionGalleryService.getExtensions([{ ...extension.identifier, preRelease: !!extension.local?.preRelease }], { targetPlatform, compatible: true }, CancellationToken.None))[0];
 				if (gallery) {
 					galleryExtensions.push(gallery);

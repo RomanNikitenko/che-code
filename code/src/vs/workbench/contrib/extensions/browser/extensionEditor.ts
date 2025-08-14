@@ -520,6 +520,7 @@ export class ExtensionEditor extends EditorPane {
 		if (!preRelease && !extension.hasReleaseVersion) {
 			return null;
 		}
+		console.info('//// BEFORE 13 getExtensions ');
 		return (await this.extensionGalleryService.getExtensions([{ ...extension.identifier, preRelease, hasPreRelease: extension.hasPreReleaseVersion }], CancellationToken.None))[0] || null;
 	}
 

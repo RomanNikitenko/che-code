@@ -702,6 +702,7 @@ class Extensions extends Disposable {
 				extensionsToQuery.push(extension);
 			}
 			if (extensionsToQuery.length) {
+				console.info('//// BEFORE 18 getExtensions ');
 				const queryResult = await this.galleryService.getExtensions(extensionsToQuery.map(e => ({ ...e.identifier, version: e.version })), CancellationToken.None);
 				const queriedIds: string[] = [];
 				const missingIds: string[] = [];
@@ -749,6 +750,7 @@ class Extensions extends Disposable {
 			}
 		}));
 		if (compatibleGalleryExtensionsToFetch.length) {
+			console.info('//// BEFORE 19 getExtensions ');
 			const result = await this.galleryService.getExtensions(compatibleGalleryExtensionsToFetch, { targetPlatform, compatible: true, queryAllVersions: true, productVersion }, CancellationToken.None);
 			compatibleGalleryExtensions.push(...result);
 		}
@@ -788,6 +790,7 @@ class Extensions extends Disposable {
 				comment: 'Report when a request is made to update metadata of an installed extension';
 			};
 			this.telemetryService.publicLog2<{}, GalleryServiceMatchInstalledExtensionClassification>('galleryService:updateMetadata');
+			console.info('===== 2222 extensionGalleryService.getExtensions');
 			const galleryWithLocalVersion: IGalleryExtension | undefined = (await this.galleryService.getExtensions([{ ...localExtension.identifier, version: localExtension.manifest.version }], CancellationToken.None))[0];
 			isPreReleaseVersion = !!galleryWithLocalVersion?.properties?.isPreReleaseVersion;
 		}
@@ -914,6 +917,7 @@ class Extensions extends Disposable {
 		if (!this.galleryService.isEnabled()) {
 			return;
 		}
+		console.info('//// BEFORE 20 getExtensions ');
 		const galleryExtensions = await this.galleryService.getExtensions(toMatch.map(e => ({ ...e.identifier, preRelease: e.local?.preRelease })), { compatible: true, targetPlatform: await this.server.extensionManagementService.getTargetPlatform() }, CancellationToken.None);
 		for (const extension of extensions) {
 			const compatible = galleryExtensions.find(e => areSameExtensions(e.identifier, extension.identifier));
@@ -1396,12 +1400,14 @@ export class ExtensionsWorkbenchService extends Disposable implements IExtension
 
 		extensionInfos.forEach(e => e.preRelease = e.preRelease ?? this.extensionManagementService.preferPreReleases);
 		const extensionsControlManifest = await this.extensionManagementService.getExtensionsControlManifest();
+		console.info('//// BEFORE 21 getExtensions ');
 		const galleryExtensions = await this.galleryService.getExtensions(extensionInfos, arg1, arg2);
 		this.syncInstalledExtensionsWithGallery(galleryExtensions);
 		return galleryExtensions.map(gallery => this.fromGallery(gallery, extensionsControlManifest));
 	}
 
 	async getResourceExtensions(locations: URI[], isWorkspaceScoped: boolean): Promise<IExtension[]> {
+		console.info('===== 333 getExtensions');
 		const resourceExtensions = await this.extensionManagementService.getExtensions(locations);
 		return resourceExtensions.map(resourceExtension => this.getInstalledExtensionMatchingLocation(resourceExtension.location)
 			?? this.instantiationService.createInstance(Extension, ext => this.getExtensionState(ext), ext => this.getRuntimeState(ext), undefined, undefined, undefined, { resourceExtension, isWorkspaceScoped }));
@@ -1935,6 +1941,7 @@ export class ExtensionsWorkbenchService extends Disposable implements IExtension
 				count: infos.length,
 			});
 			this.logService.trace(`Checking updates for extensions`, infos.map(e => e.id).join(', '));
+			console.info('//// BEFORE 22 getExtensions ');
 			const galleryExtensions = await this.galleryService.getExtensions(infos, { targetPlatform, compatible: true, productVersion: this.getProductVersion(), updateCheck: true }, CancellationToken.None);
 			if (galleryExtensions.length) {
 				await this.syncInstalledExtensionsWithGallery(galleryExtensions, infos);
@@ -1973,6 +1980,7 @@ export class ExtensionsWorkbenchService extends Disposable implements IExtension
 		const extensionInfo = version ? { id: extensionId, version } : { id: extensionId, preRelease: versionKind === 'prerelease' };
 		const queryOptions: IExtensionQueryOptions = version ? {} : { compatible: true };
 
+		console.info('===== 4444 downloadVSIX extensionGalleryService.getExtensions');
 		let [galleryExtension] = await this.galleryService.getExtensions([extensionInfo], queryOptions, CancellationToken.None);
 		if (!galleryExtension) {
 			throw new Error(nls.localize('extension not found', "Extension '{0}' not found.", extensionId));
@@ -1998,6 +2006,7 @@ export class ExtensionsWorkbenchService extends Disposable implements IExtension
 		}
 
 		if (targetPlatform !== galleryExtension.properties.targetPlatform) {
+			console.info('===== 5555 downloadVSIX extensionGalleryService.getExtensions');
 			[galleryExtension] = await this.galleryService.getExtensions([extensionInfo], { ...queryOptions, targetPlatform }, CancellationToken.None);
 		}
 
@@ -2105,6 +2114,7 @@ export class ExtensionsWorkbenchService extends Disposable implements IExtension
 			}
 		}
 		if (infos.length) {
+			console.info('//// BEFORE 23 getExtensions ');
 			const galleryExtensions = await this.galleryService.getExtensions(infos, CancellationToken.None);
 			if (galleryExtensions.length) {
 				await this.syncInstalledExtensionsWithGallery(galleryExtensions);
@@ -2398,9 +2408,11 @@ export class ExtensionsWorkbenchService extends Disposable implements IExtension
 		if (extension.deprecationInfo?.disallowInstall) {
 			return new MarkdownString().appendText(nls.localize('disallowed', "This extension is disallowed to be installed."));
 		}
-
+		const manifest = await this.extensionGalleryManifestService.getExtensionGalleryManifest();
+		console.info('///////////// ++++++ canInstall ', manifest);
 		if (extension.gallery) {
-			if (!extension.gallery.isSigned && shouldRequireRepositorySignatureFor(extension.private, await this.extensionGalleryManifestService.getExtensionGalleryManifest())) {
+			if (!extension.gallery.isSigned && shouldRequireRepositorySignatureFor(extension.private, manifest)) {
+				console.info('///////////// ++++++ canInstall +++ This extension is not signed');
 				return new MarkdownString().appendText(nls.localize('not signed', "This extension is not signed."));
 			}
 
@@ -2463,6 +2475,7 @@ export class ExtensionsWorkbenchService extends Disposable implements IExtension
 
 			if (installableInfo) {
 				const targetPlatform = extension?.server ? await extension.server.extensionManagementService.getTargetPlatform() : undefined;
+				console.info('===== 666 extensionGalleryService.getExtensions');
 				gallery = (await this.galleryService.getExtensions([installableInfo], { targetPlatform }, CancellationToken.None)).at(0);
 			}
 
@@ -2506,6 +2519,7 @@ export class ExtensionsWorkbenchService extends Disposable implements IExtension
 					if (!gallery) {
 						const id = isString(arg) ? arg : (<IExtension>arg).identifier.id;
 						const manifest = await this.extensionGalleryManifestService.getExtensionGalleryManifest();
+						console.info('///////////// ++++++ installable ', manifest);
 						const reportIssueUri = manifest ? getExtensionGalleryManifestResourceUri(manifest, ExtensionGalleryResourceType.ContactSupportUri) : undefined;
 						const reportIssueMessage = reportIssueUri ? nls.localize('report issue', "If this issue persists, please report it at {0}", reportIssueUri.toString()) : '';
 						if (installOptions.version) {
