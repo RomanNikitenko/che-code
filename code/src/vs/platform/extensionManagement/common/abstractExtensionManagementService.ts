@@ -163,6 +163,7 @@ export abstract class AbstractExtensionManagementService extends CommontExtensio
 	}
 
 	async installFromGallery(extension: IGalleryExtension, options: InstallOptions = {}): Promise<ILocalExtension> {
+		console.info('//// abstractExtensionManagementService.ts /// installFromGallery ');
 		try {
 			const results = await this.installGalleryExtensions([{ extension, options }]);
 			const result = results.find(({ identifier }) => areSameExtensions(identifier, extension.identifier));
@@ -179,18 +180,23 @@ export abstract class AbstractExtensionManagementService extends CommontExtensio
 	}
 
 	async installGalleryExtensions(extensions: InstallExtensionInfo[]): Promise<InstallExtensionResult[]> {
+		console.info('//// abstractExtensionManagementService.ts /// installGalleryExtensions ');
 		if (!this.galleryService.isEnabled()) {
+			console.info('//// abstractExtensionManagementService.ts /// installGalleryExtensions /// NOT enabled ');
 			throw new ExtensionManagementError(nls.localize('MarketPlaceDisabled', "Marketplace is not enabled"), ExtensionManagementErrorCode.NotAllowed);
 		}
 
 		const results: InstallExtensionResult[] = [];
 		const installableExtensions: InstallableExtension[] = [];
 
+		console.info('//// abstractExtensionManagementService.ts /// installGalleryExtensions /// before allSettled');
 		await Promise.allSettled(extensions.map(async ({ extension, options }) => {
 			try {
+				console.info('//// abstractExtensionManagementService.ts /// installGalleryExtensions /// before checkAndGetCompatibleVersion');
 				const compatible = await this.checkAndGetCompatibleVersion(extension, !!options?.installGivenVersion, !!options?.installPreReleaseVersion, options.productVersion ?? { version: this.productService.version, date: this.productService.date });
 				installableExtensions.push({ ...compatible, options });
 			} catch (error) {
+				console.info('//// abstractExtensionManagementService.ts /// installGalleryExtensions /// ERROR checkAndGetCompatibleVersion');
 				results.push({ identifier: extension.identifier, operation: InstallOperation.Install, source: extension, error, profileLocation: options.profileLocation ?? this.getCurrentExtensionsManifestLocation() });
 			}
 		}));
@@ -590,6 +596,7 @@ export abstract class AbstractExtensionManagementService extends CommontExtensio
 	}
 
 	private async getAllDepsAndPackExtensions(extensionIdentifier: IExtensionIdentifier, manifest: IExtensionManifest, preferPreRelease: boolean, productVersion: IProductVersion, installed: ILocalExtension[]): Promise<{ gallery: IGalleryExtension; manifest: IExtensionManifest }[]> {
+		console.info('//// abstractExtensionManagementService.ts /// getAllDepsAndPackExtensions ');
 		if (!this.galleryService.isEnabled()) {
 			return [];
 		}

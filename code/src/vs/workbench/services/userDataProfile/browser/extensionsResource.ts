@@ -183,6 +183,7 @@ export class ExtensionsResource implements IProfileResource {
 							await this.extensionManagementService.installFromGallery(installExtensionInfo.extension, installExtensionInfo.options);
 						}
 					} else {
+						console.info('////333 installGalleryExtensions');
 						await this.extensionManagementService.installGalleryExtensions(installExtensionInfos);
 					}
 				}

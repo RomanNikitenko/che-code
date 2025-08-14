@@ -444,6 +444,8 @@ export class ExtensionManagementService extends CommontExtensionManagementServic
 	}
 
 	async installGalleryExtensions(extensions: InstallExtensionInfo[]): Promise<InstallExtensionResult[]> {
+		console.info('////222 installGalleryExtensions');
+		
 		const results = new Map<string, InstallExtensionResult>();
 
 		const extensionsByServer = new Map<IExtensionManagementServer, InstallExtensionInfo[]>();
@@ -500,6 +502,8 @@ export class ExtensionManagementService extends CommontExtensionManagementServic
 		}));
 
 		await Promise.all([...extensionsByServer.entries()].map(async ([server, extensions]) => {
+		console.info('////333 installGalleryExtensions');
+
 			const serverResults = await server.extensionManagementService.installGalleryExtensions(extensions);
 			for (const result of serverResults) {
 				results.set(result.identifier.id.toLowerCase(), result);

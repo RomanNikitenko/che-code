@@ -1965,6 +1965,8 @@ export class ExtensionsWorkbenchService extends Disposable implements IExtension
 				});
 			}
 		});
+		console.info('//// updateAll');
+
 		return this.extensionManagementService.installGalleryExtensions(toUpdate);
 	}
 
