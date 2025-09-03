@@ -52,6 +52,7 @@ export class InstallExtensionQuickAccessProvider extends PickerQuickAccessProvid
 
 	private async getPicksForExtensionId(filter: string, fallback: IPickerQuickAccessItem, token: CancellationToken): Promise<Array<IPickerQuickAccessItem | IQuickPickSeparator>> {
 		try {
+			console.info('//// BEFORE 17 getExtensions ');
 			const [galleryExtension] = await this.galleryService.getExtensions([{ id: filter }], token);
 			if (token.isCancellationRequested) {
 				return []; // return early if canceled

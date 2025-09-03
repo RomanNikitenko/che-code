@@ -218,12 +218,20 @@ export class ExtensionManagementService extends AbstractExtensionManagementServi
 		return local;
 	}
 
-	protected removeExtension(extension: ILocalExtension): Promise<void> {
+	protected deleteExtension(extension: ILocalExtension): Promise<void> {
 		return this.extensionsScanner.deleteExtension(extension, 'remove');
 	}
 
 	protected copyExtension(extension: ILocalExtension, fromProfileLocation: URI, toProfileLocation: URI, metadata: Partial<Metadata>): Promise<ILocalExtension> {
 		return this.extensionsScanner.copyExtension(extension, fromProfileLocation, toProfileLocation, metadata);
+	}
+
+	protected moveExtension(extension: ILocalExtension, fromProfileLocation: URI, toProfileLocation: URI, metadata: Partial<Metadata>): Promise<ILocalExtension> {
+		return this.extensionsScanner.moveExtension(extension, fromProfileLocation, toProfileLocation, metadata);
+	}
+
+	protected removeExtension(extension: ILocalExtension, fromProfileLocation: URI): Promise<void> {
+		return this.extensionsScanner.removeExtension(extension.identifier, fromProfileLocation);
 	}
 
 	copyExtensions(fromProfileLocation: URI, toProfileLocation: URI): Promise<void> {
@@ -336,7 +344,10 @@ export class ExtensionManagementService extends AbstractExtensionManagementServi
 			verifySignature = isBoolean(value) ? value : true;
 		}
 		const { location, verificationStatus } = await this.extensionsDownloader.download(extension, operation, verifySignature, clientTargetPlatform);
-		const shouldRequireSignature = shouldRequireRepositorySignatureFor(extension.private, await this.extensionGalleryManifestService.getExtensionGalleryManifest());
+		console.info('/////++++++ BEFORE 10 getExtensionGalleryManifest ');
+		const manifest = await this.extensionGalleryManifestService.getExtensionGalleryManifest();
+		console.info('///////////// ++++++ downloadExtension ', manifest);
+		const shouldRequireSignature = shouldRequireRepositorySignatureFor(extension.private, manifest);
 
 		if (
 			verificationStatus !== ExtensionSignatureVerificationCode.Success
@@ -764,6 +775,33 @@ export class ExtensionsScanner extends Disposable {
 		return this.scanLocalExtension(extension.location, extension.type, toProfileLocation);
 	}
 
+	async moveExtension(extension: ILocalExtension, fromProfileLocation: URI, toProfileLocation: URI, metadata: Partial<Metadata>): Promise<ILocalExtension> {
+		const source = await this.getScannedExtension(extension, fromProfileLocation);
+		const target = await this.getScannedExtension(extension, toProfileLocation);
+		metadata = { ...source?.metadata, ...metadata };
+
+		if (target) {
+			if (this.uriIdentityService.extUri.isEqual(target.location, extension.location)) {
+				await this.extensionsProfileScannerService.updateMetadata([[extension, { ...target.metadata, ...metadata }]], toProfileLocation);
+			} else {
+				const targetExtension = await this.scanLocalExtension(target.location, extension.type, toProfileLocation);
+				await this.removeExtension(targetExtension.identifier, toProfileLocation);
+				await this.extensionsProfileScannerService.addExtensionsToProfile([[extension, { ...target.metadata, ...metadata }]], toProfileLocation);
+			}
+		} else {
+			await this.extensionsProfileScannerService.addExtensionsToProfile([[extension, metadata]], toProfileLocation);
+			if (source) {
+				await this.removeExtension(source.identifier, fromProfileLocation);
+			}
+		}
+
+		return this.scanLocalExtension(extension.location, extension.type, toProfileLocation);
+	}
+
+	async removeExtension(identifier: IExtensionIdentifier, fromProfileLocation: URI): Promise<void> {
+		await this.extensionsProfileScannerService.removeExtensionsFromProfile([identifier], fromProfileLocation);
+	}
+
 	async copyExtensions(fromProfileLocation: URI, toProfileLocation: URI, productVersion: IProductVersion): Promise<void> {
 		const fromExtensions = await this.scanExtensions(ExtensionType.User, fromProfileLocation, productVersion);
 		const extensions: [ILocalExtension, Metadata | undefined][] = await Promise.all(fromExtensions
@@ -1120,8 +1158,10 @@ class InstallExtensionInProfileTask extends AbstractExtensionTask<ILocalExtensio
 
 	private async updateMetadata(extension: ILocalExtension, token: CancellationToken): Promise<void> {
 		try {
+			console.info('//// BEFORE 10 getExtensions ');
 			let [galleryExtension] = await this.galleryService.getExtensions([{ id: extension.identifier.id, version: extension.manifest.version }], token);
 			if (!galleryExtension) {
+				console.info('//// BEFORE 11 getExtensions ');
 				[galleryExtension] = await this.galleryService.getExtensions([{ id: extension.identifier.id }], token);
 			}
 			if (galleryExtension) {

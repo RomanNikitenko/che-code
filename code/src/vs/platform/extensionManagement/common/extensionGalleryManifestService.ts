@@ -35,11 +35,13 @@ export class ExtensionGalleryManifestService extends Disposable implements IExte
 	}
 
 	async getExtensionGalleryManifest(): Promise<IExtensionGalleryManifest | null> {
+		console.info('/////++++++ getExtensionGalleryManifest ');
 		const extensionsGallery = this.productService.extensionsGallery as ExtensionGalleryConfig | undefined;
 		if (!extensionsGallery?.serviceUrl) {
 			return null;
 		}
-
+		console.info('/////++++++ getExtensionGalleryManifest ++++ extensionsGallery?.serviceUrl ', extensionsGallery?.serviceUrl);
+		console.info(`/////++++++ getExtensionGalleryManifest ++++ LATEST ${extensionsGallery.serviceUrl}/vscode/{publisher}/{name}/latest`);
 		const resources = [
 			{
 				id: `${extensionsGallery.serviceUrl}/extensionquery`,

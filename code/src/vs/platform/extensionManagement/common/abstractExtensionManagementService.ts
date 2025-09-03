@@ -163,6 +163,7 @@ export abstract class AbstractExtensionManagementService extends CommontExtensio
 	}
 
 	async installFromGallery(extension: IGalleryExtension, options: InstallOptions = {}): Promise<ILocalExtension> {
+		console.info('//// abstractExtensionManagementService.ts /// installFromGallery ');
 		try {
 			const results = await this.installGalleryExtensions([{ extension, options }]);
 			const result = results.find(({ identifier }) => areSameExtensions(identifier, extension.identifier));
@@ -179,18 +180,23 @@ export abstract class AbstractExtensionManagementService extends CommontExtensio
 	}
 
 	async installGalleryExtensions(extensions: InstallExtensionInfo[]): Promise<InstallExtensionResult[]> {
+		console.info('//// abstractExtensionManagementService.ts /// installGalleryExtensions ');
 		if (!this.galleryService.isEnabled()) {
+			console.info('//// abstractExtensionManagementService.ts /// installGalleryExtensions /// NOT enabled ');
 			throw new ExtensionManagementError(nls.localize('MarketPlaceDisabled', "Marketplace is not enabled"), ExtensionManagementErrorCode.NotAllowed);
 		}
 
 		const results: InstallExtensionResult[] = [];
 		const installableExtensions: InstallableExtension[] = [];
 
+		console.info('//// abstractExtensionManagementService.ts /// installGalleryExtensions /// before allSettled');
 		await Promise.allSettled(extensions.map(async ({ extension, options }) => {
 			try {
+				console.info('//// abstractExtensionManagementService.ts /// installGalleryExtensions /// before checkAndGetCompatibleVersion');
 				const compatible = await this.checkAndGetCompatibleVersion(extension, !!options?.installGivenVersion, !!options?.installPreReleaseVersion, options.productVersion ?? { version: this.productService.version, date: this.productService.date });
 				installableExtensions.push({ ...compatible, options });
 			} catch (error) {
+				console.info('//// abstractExtensionManagementService.ts /// installGalleryExtensions /// ERROR checkAndGetCompatibleVersion');
 				results.push({ identifier: extension.identifier, operation: InstallOperation.Install, source: extension, error, profileLocation: options.profileLocation ?? this.getCurrentExtensionsManifestLocation() });
 			}
 		}));
@@ -351,8 +357,8 @@ export abstract class AbstractExtensionManagementService extends CommontExtensio
 							// Explicitly asked to install the release version
 							preferPreRelease = false;
 						}
-						const allDepsAndPackExtensionsToInstall = await this.getAllDepsAndPackExtensions(task.identifier, task.manifest, preferPreRelease, task.options.productVersion);
 						const installed = await this.getInstalled(undefined, task.options.profileLocation, task.options.productVersion);
+						const allDepsAndPackExtensionsToInstall = await this.getAllDepsAndPackExtensions(task.identifier, task.manifest, preferPreRelease, task.options.productVersion, installed);
 						const options: InstallExtensionTaskOptions = { ...task.options, pinned: false, installGivenVersion: false, context: { ...task.options.context, [EXTENSION_INSTALL_DEP_PACK_CONTEXT]: true } };
 						for (const { gallery, manifest } of distinct(allDepsAndPackExtensionsToInstall, ({ gallery }) => gallery.identifier.id)) {
 							const existing = installed.find(e => areSameExtensions(e.identifier, gallery.identifier));
@@ -589,7 +595,8 @@ export abstract class AbstractExtensionManagementService extends CommontExtensio
 		throw error;
 	}
 
-	private async getAllDepsAndPackExtensions(extensionIdentifier: IExtensionIdentifier, manifest: IExtensionManifest, preferPreRelease: boolean, productVersion: IProductVersion): Promise<{ gallery: IGalleryExtension; manifest: IExtensionManifest }[]> {
+	private async getAllDepsAndPackExtensions(extensionIdentifier: IExtensionIdentifier, manifest: IExtensionManifest, preferPreRelease: boolean, productVersion: IProductVersion, installed: ILocalExtension[]): Promise<{ gallery: IGalleryExtension; manifest: IExtensionManifest }[]> {
+		console.info('//// abstractExtensionManagementService.ts /// getAllDepsAndPackExtensions ');
 		if (!this.galleryService.isEnabled()) {
 			return [];
 		}
@@ -602,9 +609,13 @@ export abstract class AbstractExtensionManagementService extends CommontExtensio
 			const dependecies: string[] = manifest.extensionDependencies || [];
 			const dependenciesAndPackExtensions = [...dependecies];
 			if (manifest.extensionPack) {
+				const existing = installed.find(e => areSameExtensions(e.identifier, extensionIdentifier));
 				for (const extension of manifest.extensionPack) {
-					if (dependenciesAndPackExtensions.every(e => !areSameExtensions({ id: e }, { id: extension }))) {
-						dependenciesAndPackExtensions.push(extension);
+					// add only those extensions which are new in currently installed extension
+					if (!(existing && existing.manifest.extensionPack && existing.manifest.extensionPack.some(old => areSameExtensions({ id: old }, { id: extension })))) {
+						if (dependenciesAndPackExtensions.every(e => !areSameExtensions({ id: e }, { id: extension }))) {
+							dependenciesAndPackExtensions.push(extension);
+						}
 					}
 				}
 			}
@@ -613,6 +624,7 @@ export abstract class AbstractExtensionManagementService extends CommontExtensio
 				// filter out known extensions
 				const ids = dependenciesAndPackExtensions.filter(id => knownIdentifiers.every(galleryIdentifier => !areSameExtensions(galleryIdentifier, { id })));
 				if (ids.length) {
+					console.info('//// BEFORE 1111 getExtensions ');
 					const galleryExtensions = await this.galleryService.getExtensions(ids.map(id => ({ id, preRelease: preferPreRelease })), CancellationToken.None);
 					for (const galleryExtension of galleryExtensions) {
 						if (knownIdentifiers.find(identifier => areSameExtensions(identifier, galleryExtension.identifier))) {
@@ -643,15 +655,19 @@ export abstract class AbstractExtensionManagementService extends CommontExtensio
 
 	private async checkAndGetCompatibleVersion(extension: IGalleryExtension, sameVersion: boolean, installPreRelease: boolean, productVersion: IProductVersion): Promise<{ extension: IGalleryExtension; manifest: IExtensionManifest }> {
 		let compatibleExtension: IGalleryExtension | null;
+		console.info('//// abstractExtensionManagementService.ts /// checkAndGetCompatibleVersion ');
 
 		const extensionsControlManifest = await this.getExtensionsControlManifest();
 		if (isMalicious(extension.identifier, extensionsControlManifest.malicious)) {
+			console.info('//// abstractExtensionManagementService.ts /// checkAndGetCompatibleVersion /// isMalicious = throw');
 			throw new ExtensionManagementError(nls.localize('malicious extension', "Can't install '{0}' extension since it was reported to be problematic.", extension.identifier.id), ExtensionManagementErrorCode.Malicious);
 		}
 
 		const deprecationInfo = extensionsControlManifest.deprecated[extension.identifier.id.toLowerCase()];
 		if (deprecationInfo?.extension?.autoMigrate) {
+			console.info('//// abstractExtensionManagementService.ts /// checkAndGetCompatibleVersion /// autoMigrate ');
 			this.logService.info(`The '${extension.identifier.id}' extension is deprecated, fetching the compatible '${deprecationInfo.extension.id}' extension instead.`);
+			console.info('//// BEFORE 2222 getExtensions ');
 			compatibleExtension = (await this.galleryService.getExtensions([{ id: deprecationInfo.extension.id, preRelease: deprecationInfo.extension.preRelease }], { targetPlatform: await this.getTargetPlatform(), compatible: true, productVersion }, CancellationToken.None))[0];
 			if (!compatibleExtension) {
 				throw new ExtensionManagementError(nls.localize('notFoundDeprecatedReplacementExtension', "Can't install '{0}' extension since it was deprecated and the replacement extension '{1}' can't be found.", extension.identifier.id, deprecationInfo.extension.id), ExtensionManagementErrorCode.Deprecated);
@@ -660,53 +676,68 @@ export abstract class AbstractExtensionManagementService extends CommontExtensio
 
 		else {
 			if (await this.canInstall(extension) !== true) {
+				console.info('//// abstractExtensionManagementService.ts /// checkAndGetCompatibleVersion /// can NOT install');
 				const targetPlatform = await this.getTargetPlatform();
 				throw new ExtensionManagementError(nls.localize('incompatible platform', "The '{0}' extension is not available in {1} for the {2}.", extension.identifier.id, this.productService.nameLong, TargetPlatformToString(targetPlatform)), ExtensionManagementErrorCode.IncompatibleTargetPlatform);
 			}
 
 			compatibleExtension = await this.getCompatibleVersion(extension, sameVersion, installPreRelease, productVersion);
 			if (!compatibleExtension) {
+				console.info('//// abstractExtensionManagementService.ts /// not compatible ');
 				const incompatibleApiProposalsMessages: string[] = [];
 				if (!areApiProposalsCompatible(extension.properties.enabledApiProposals ?? [], incompatibleApiProposalsMessages)) {
+					console.info('//// abstractExtensionManagementService.ts /// not compatible /// throw new ExtensionManagementError ');
 					throw new ExtensionManagementError(nls.localize('incompatibleAPI', "Can't install '{0}' extension. {1}", extension.displayName ?? extension.identifier.id, incompatibleApiProposalsMessages[0]), ExtensionManagementErrorCode.IncompatibleApi);
 				}
 				/** If no compatible release version is found, check if the extension has a release version or not and throw relevant error */
+				console.info('//// abstractExtensionManagementService.ts /// BEFORE 333 getExtensions ');
 				if (!installPreRelease && extension.hasPreReleaseVersion && extension.properties.isPreReleaseVersion && (await this.galleryService.getExtensions([extension.identifier], CancellationToken.None))[0]) {
 					throw new ExtensionManagementError(nls.localize('notFoundReleaseExtension', "Can't install release version of '{0}' extension because it has no release version.", extension.displayName ?? extension.identifier.id), ExtensionManagementErrorCode.ReleaseVersionNotFound);
 				}
 				throw new ExtensionManagementError(nls.localize('notFoundCompatibleDependency', "Can't install '{0}' extension because it is not compatible with the current version of {1} (version {2}).", extension.identifier.id, this.productService.nameLong, this.productService.version), ExtensionManagementErrorCode.Incompatible);
+			} else {
+				console.info('//// abstractExtensionManagementService.ts /// DO compatible ');
 			}
 		}
 
 		this.logService.info('Getting Manifest...', compatibleExtension.identifier.id);
 		const manifest = await this.galleryService.getManifest(compatibleExtension, CancellationToken.None);
 		if (manifest === null) {
+			console.info('//// abstractExtensionManagementService.ts /// manifest NULL ');
 			throw new ExtensionManagementError(`Missing manifest for extension ${compatibleExtension.identifier.id}`, ExtensionManagementErrorCode.Invalid);
 		}
 
 		if (manifest.version !== compatibleExtension.version) {
+			console.info('//// abstractExtensionManagementService.ts /// manifest.version !== compatibleExtension.version ');
 			throw new ExtensionManagementError(`Cannot install '${compatibleExtension.identifier.id}' extension because of version mismatch in Marketplace`, ExtensionManagementErrorCode.Invalid);
 		}
+
+		console.info('//// abstractExtensionManagementService.ts /// RETURN EXTENSION ');
 
 		return { extension: compatibleExtension, manifest };
 	}
 
 	protected async getCompatibleVersion(extension: IGalleryExtension, sameVersion: boolean, includePreRelease: boolean, productVersion: IProductVersion): Promise<IGalleryExtension | null> {
+		console.info('//// abstractExtensionManagementService.ts //// getCompatibleVersion ');
 		const targetPlatform = await this.getTargetPlatform();
 		let compatibleExtension: IGalleryExtension | null = null;
 
 		if (!sameVersion && extension.hasPreReleaseVersion && extension.properties.isPreReleaseVersion !== includePreRelease) {
+			console.info('//// abstractExtensionManagementService.ts //// getCompatibleVersion BEFORE 444 getExtensions ');
 			compatibleExtension = (await this.galleryService.getExtensions([{ ...extension.identifier, preRelease: includePreRelease }], { targetPlatform, compatible: true, productVersion }, CancellationToken.None))[0] || null;
 		}
 
 		if (!compatibleExtension && await this.galleryService.isExtensionCompatible(extension, includePreRelease, targetPlatform, productVersion)) {
+			console.info('//// abstractExtensionManagementService.ts //// getCompatibleVersion /// isExtensionCompatible');
 			compatibleExtension = extension;
 		}
 
 		if (!compatibleExtension) {
 			if (sameVersion) {
+				console.info('//// abstractExtensionManagementService.ts //// getCompatibleVersion BEFORE 555 getExtensions ');
 				compatibleExtension = (await this.galleryService.getExtensions([{ ...extension.identifier, version: extension.version }], { targetPlatform, compatible: true, productVersion }, CancellationToken.None))[0] || null;
 			} else {
+				console.info('//// abstractExtensionManagementService.ts //// getCompatibleVersion ELSE BEFORE 555 getExtensions ');
 				compatibleExtension = await this.galleryService.getCompatibleExtension(extension, includePreRelease, targetPlatform, productVersion);
 			}
 		}
@@ -763,8 +794,10 @@ export abstract class AbstractExtensionManagementService extends CommontExtensio
 				allTasks.push(createUninstallExtensionTask(extension, uninstallOptions));
 			}
 
-			if (uninstallOptions.remove) {
-				extensionsToRemove.push(extension);
+			if (uninstallOptions.remove || extension.isApplicationScoped) {
+				if (uninstallOptions.remove) {
+					extensionsToRemove.push(extension);
+				}
 				for (const profile of this.userDataProfilesService.profiles) {
 					if (this.uriIdentityService.extUri.isEqual(profile.extensionsResource, uninstallOptions.profileLocation)) {
 						continue;
@@ -837,7 +870,7 @@ export abstract class AbstractExtensionManagementService extends CommontExtensio
 			}
 
 			if (extensionsToRemove.length) {
-				await this.joinAllSettled(extensionsToRemove.map(extension => this.removeExtension(extension)));
+				await this.joinAllSettled(extensionsToRemove.map(extension => this.deleteExtension(extension)));
 			}
 		} catch (e) {
 			const error = toExtensionManagementError(e);
@@ -935,7 +968,9 @@ export abstract class AbstractExtensionManagementService extends CommontExtensio
 	protected abstract createInstallExtensionTask(manifest: IExtensionManifest, extension: URI | IGalleryExtension, options: InstallExtensionTaskOptions): IInstallExtensionTask;
 	protected abstract createUninstallExtensionTask(extension: ILocalExtension, options: UninstallExtensionTaskOptions): IUninstallExtensionTask;
 	protected abstract copyExtension(extension: ILocalExtension, fromProfileLocation: URI, toProfileLocation: URI, metadata?: Partial<Metadata>): Promise<ILocalExtension>;
-	protected abstract removeExtension(extension: ILocalExtension): Promise<void>;
+	protected abstract moveExtension(extension: ILocalExtension, fromProfileLocation: URI, toProfileLocation: URI, metadata?: Partial<Metadata>): Promise<ILocalExtension>;
+	protected abstract removeExtension(extension: ILocalExtension, fromProfileLocation: URI): Promise<void>;
+	protected abstract deleteExtension(extension: ILocalExtension): Promise<void>;
 }
 
 export function toExtensionManagementError(error: Error, code?: ExtensionManagementErrorCode): ExtensionManagementError {

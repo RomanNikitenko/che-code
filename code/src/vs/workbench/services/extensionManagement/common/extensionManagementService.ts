@@ -4,7 +4,6 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { Emitter, Event, EventMultiplexer } from '../../../../base/common/event.js';
-import './media/extensionManagement.css';
 import {
 	ILocalExtension, IGalleryExtension, IExtensionIdentifier, IExtensionsControlManifest, IExtensionGalleryService, InstallOptions, UninstallOptions, InstallExtensionResult, ExtensionManagementError, ExtensionManagementErrorCode, Metadata, InstallOperation, EXTENSION_INSTALL_SOURCE_CONTEXT, InstallExtensionInfo,
 	IProductVersion,
@@ -445,6 +444,9 @@ export class ExtensionManagementService extends CommontExtensionManagementServic
 	}
 
 	async installGalleryExtensions(extensions: InstallExtensionInfo[]): Promise<InstallExtensionResult[]> {
+		/// 
+		console.info('////222 installGalleryExtensions');
+		
 		const results = new Map<string, InstallExtensionResult>();
 
 		const extensionsByServer = new Map<IExtensionManagementServer, InstallExtensionInfo[]>();
@@ -501,6 +503,9 @@ export class ExtensionManagementService extends CommontExtensionManagementServic
 		}));
 
 		await Promise.all([...extensionsByServer.entries()].map(async ([server, extensions]) => {
+		///
+		console.info('////333 installGalleryExtensions');
+
 			const serverResults = await server.extensionManagementService.installGalleryExtensions(extensions);
 			for (const result of serverResults) {
 				results.set(result.identifier.id.toLowerCase(), result);
@@ -981,6 +986,7 @@ export class ExtensionManagementService extends CommontExtensionManagementServic
 			return;
 		}
 
+		console.info('//// BEFORE 26 getExtensions ');
 		const extensions = await this.extensionGalleryService.getExtensions(toGet.map(id => ({ id })), token);
 		for (let idx = 0; idx < extensions.length; idx++) {
 			const extension = extensions[idx];
@@ -1032,6 +1038,7 @@ export class ExtensionManagementService extends CommontExtensionManagementServic
 
 		const nonWebExtensions = [];
 		if (manifest.extensionPack?.length) {
+			console.info('//// BEFORE 27 getExtensions ');
 			const extensions = await this.extensionGalleryService.getExtensions(manifest.extensionPack.map(id => ({ id })), CancellationToken.None);
 			for (const extension of extensions) {
 				if (await this.servers[0].extensionManagementService.canInstall(extension) !== true) {

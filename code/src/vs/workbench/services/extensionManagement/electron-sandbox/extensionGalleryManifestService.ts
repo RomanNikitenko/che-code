@@ -63,6 +63,7 @@ export class WorkbenchExtensionGalleryManifestService extends ExtensionGalleryMa
 		if (remoteConnection) {
 			channels.push(remoteConnection.getChannel('extensionGalleryManifest'));
 		}
+		console.info('/////++++++ BEFORE 4 getExtensionGalleryManifest ');
 		this.getExtensionGalleryManifest().then(manifest => {
 			channels.forEach(channel => channel.call('setExtensionGalleryManifest', [manifest]));
 			this._register(this.onDidChangeExtensionGalleryManifest(manifest => channels.forEach(channel => channel.call('setExtensionGalleryManifest', [manifest]))));

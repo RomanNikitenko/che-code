@@ -103,10 +103,14 @@ export abstract class ProfileAwareExtensionManagementChannelClient extends BaseE
 	}
 
 	override async installGalleryExtensions(extensions: InstallExtensionInfo[]): Promise<InstallExtensionResult[]> {
+		console.error('============== installGalleryExtensions 3');
 		const infos: InstallExtensionInfo[] = [];
 		for (const extension of extensions) {
 			infos.push({ ...extension, options: { ...extension.options, profileLocation: await this.getProfileLocation(extension.options?.profileLocation) } });
 		}
+		///
+		console.info('////111 installGalleryExtensions');
+
 		return super.installGalleryExtensions(infos);
 	}
 

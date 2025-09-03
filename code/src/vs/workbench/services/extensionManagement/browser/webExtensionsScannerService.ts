@@ -310,6 +310,7 @@ export class WebExtensionsScannerService extends Disposable implements IWebExten
 				if (!extensionsToMigrate.length) {
 					return;
 				}
+				console.info('//// BEFORE 24 getExtensions ');
 				const fromExtensions = await this.galleryService.getExtensions(extensionsToMigrate.map(([id]) => ({ id })), CancellationToken.None);
 				try {
 					await Promise.allSettled(extensionsToMigrate.map(async ([from, to]) => {
@@ -385,6 +386,7 @@ export class WebExtensionsScannerService extends Disposable implements IWebExten
 				this.logService.info(`Ignoring additional builtin extension from gallery resource ${extensionGalleryResource.toString()} because there is an error while converting it into web extension`, getErrorMessage(error));
 			}
 		}));
+		console.info('//// BEFORE 25 getExtensions ');
 		const galleryExtensions = await this.galleryService.getExtensions(extensionInfos, CancellationToken.None);
 		for (const galleryExtension of galleryExtensions) {
 			const webExtension = result.get(galleryExtension.identifier.id.toLowerCase());
@@ -449,6 +451,7 @@ export class WebExtensionsScannerService extends Disposable implements IWebExten
 		if (toGet.length === 0) {
 			return result;
 		}
+		console.info('//// BEFORE 26 getExtensions ');
 		const extensions = await this.galleryService.getExtensions(toGet, { compatible: true, targetPlatform: TargetPlatform.WEB }, CancellationToken.None);
 		const packsAndDependencies = new Map<string, IExtensionInfo>();
 		for (const extension of extensions) {
@@ -651,6 +654,7 @@ export class WebExtensionsScannerService extends Disposable implements IWebExten
 	}
 
 	private async toWebExtensionFromGallery(galleryExtension: IGalleryExtension, metadata?: Metadata): Promise<IWebExtension> {
+		console.info('++++++ === toWebExtensionFromGallery ');
 		const extensionLocation = await this.extensionResourceLoaderService.getExtensionGalleryResourceURL({
 			publisher: galleryExtension.publisher,
 			name: galleryExtension.name,
@@ -661,6 +665,7 @@ export class WebExtensionsScannerService extends Disposable implements IWebExten
 		if (!extensionLocation) {
 			throw new Error('No extension gallery service configured.');
 		}
+		console.info('++++++ === toWebExtensionFromGallery ', extensionLocation);
 
 		return this.toWebExtensionFromExtensionGalleryResource(extensionLocation,
 			galleryExtension.identifier,
