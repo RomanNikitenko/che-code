@@ -595,6 +595,7 @@ export abstract class AbstractExtensionGalleryService implements IExtensionGalle
 		const token = CancellationToken.isCancellationToken(arg1) ? arg1 : arg2 as CancellationToken;
 
 		const resourceApi = (options.preferResourceApi && (this.configurationService.getValue(UseUnpkgResourceApiConfigKey) ?? false)) ? await this.getResourceApi(extensionGalleryManifest) : undefined;
+		console.info('/////++++++ BEFORE 11 +++ resourceApi ', resourceApi);
 		const result = resourceApi
 			? await this.getExtensionsUsingResourceApi(extensionInfos, options, resourceApi, extensionGalleryManifest, token)
 			: await this.getExtensionsUsingQueryApi(extensionInfos, options, extensionGalleryManifest, token);
@@ -656,6 +657,7 @@ export abstract class AbstractExtensionGalleryService implements IExtensionGalle
 	}
 
 	private async getExtensionsUsingQueryApi(extensionInfos: ReadonlyArray<IExtensionInfo>, options: IExtensionQueryOptions, extensionGalleryManifest: IExtensionGalleryManifest, token: CancellationToken): Promise<IGalleryExtension[]> {
+		console.info('/////++++++ getExtensionsUsingQueryApi ');
 		const names: string[] = [],
 			ids: string[] = [],
 			includePreRelease: (IExtensionIdentifier & { includePreRelease: boolean })[] = [],
@@ -715,7 +717,7 @@ export abstract class AbstractExtensionGalleryService implements IExtensionGalle
 	}
 
 	private async getExtensionsUsingResourceApi(extensionInfos: ReadonlyArray<IExtensionInfo>, options: IExtensionQueryOptions, resourceApi: { uri: string; fallback?: string }, extensionGalleryManifest: IExtensionGalleryManifest, token: CancellationToken): Promise<IGalleryExtension[]> {
-
+		console.info('/////++++++ getExtensionsUsingResourceApi ');
 		const result: IGalleryExtension[] = [];
 		const toQuery: IExtensionInfo[] = [];
 		const toFetchLatest: IExtensionInfo[] = [];
