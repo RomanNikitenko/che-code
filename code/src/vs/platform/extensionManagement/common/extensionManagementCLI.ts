@@ -171,6 +171,7 @@ export class ExtensionManagementCLI {
 	}
 
 	private async installGalleryExtensions(installExtensionInfos: InstallGalleryExtensionInfo[], installed: ILocalExtension[], force: boolean): Promise<string[]> {
+		console.error('============== installGalleryExtensions 1');
 		installExtensionInfos = installExtensionInfos.filter(installExtensionInfo => {
 			const { id, version, installOptions } = installExtensionInfo;
 			const installedExtension = installed.find(i => areSameExtensions(i.identifier, { id }));

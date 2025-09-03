@@ -134,6 +134,7 @@ export class ExtensionManagementChannel implements IServerChannel {
 				return this.service.installFromGallery(args[0], transformIncomingOptions(args[1], uriTransformer));
 			}
 			case 'installGalleryExtensions': {
+				console.error('============== installGalleryExtensions 2');
 				const arg: InstallExtensionInfo[] = args[0];
 				return this.service.installGalleryExtensions(arg.map(({ extension, options }) => ({ extension, options: transformIncomingOptions(options, uriTransformer) ?? {} })));
 			}
@@ -277,6 +278,7 @@ export class ExtensionManagementChannelClient extends CommontExtensionManagement
 	}
 
 	async installGalleryExtensions(extensions: InstallExtensionInfo[]): Promise<InstallExtensionResult[]> {
+		console.error('============== installGalleryExtensions 4');
 		const results = await this.channel.call<InstallExtensionResult[]>('installGalleryExtensions', [extensions]);
 		return results.map(e => ({ ...e, local: e.local ? transformIncomingExtension(e.local, null) : e.local, source: this.isUriComponents(e.source) ? URI.revive(e.source) : e.source, profileLocation: URI.revive(e.profileLocation) }));
 	}
