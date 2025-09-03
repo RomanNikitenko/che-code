@@ -738,8 +738,11 @@ export abstract class AbstractExtensionGalleryService implements IExtensionGalle
 			let galleryExtension: IGalleryExtension | null | 'NOT_FOUND';
 			try {
 				try {
+					console.error('++++++++ before get latest');
 					galleryExtension = await this.getLatestGalleryExtension(extensionInfo, options, resourceApi.uri, extensionGalleryManifest, token);
+					console.error('++++++++ After get latest');
 				} catch (error) {
+					console.error('++++++++ Error get latest');
 					if (!resourceApi.fallback) {
 						throw error;
 					}
@@ -763,7 +766,9 @@ export abstract class AbstractExtensionGalleryService implements IExtensionGalle
 							preRelease: !!extensionInfo.preRelease,
 							compatible: !!options.compatible
 						});
+					console.error('++++++++ 222 before get latest');
 					galleryExtension = await this.getLatestGalleryExtension(extensionInfo, options, resourceApi.fallback, extensionGalleryManifest, token);
+					console.error('++++++++ 222 after get latest');
 				}
 
 				if (galleryExtension === 'NOT_FOUND') {
@@ -779,6 +784,7 @@ export abstract class AbstractExtensionGalleryService implements IExtensionGalle
 				}
 
 			} catch (error) {
+				console.error('++++++++ FINAL Error get latest');
 				// fallback to query
 				this.logService.error(`Error while getting the latest version for the extension ${extensionInfo.id}.`, getErrorMessage(error));
 				this.telemetryService.publicLog2<
