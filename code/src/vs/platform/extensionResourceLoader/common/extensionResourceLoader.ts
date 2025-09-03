@@ -88,6 +88,7 @@ export abstract class AbstractExtensionResourceLoaderService extends Disposable 
 
 	private async _init(): Promise<void> {
 		try {
+			console.info('/////++++++ BEFORE 9 getExtensionGalleryManifest ');
 			const manifest = await this._extensionGalleryManifestService.getExtensionGalleryManifest();
 			this.resolve(manifest);
 			this._register(this._extensionGalleryManifestService.onDidChangeExtensionGalleryManifest(() => this.resolve(manifest)));

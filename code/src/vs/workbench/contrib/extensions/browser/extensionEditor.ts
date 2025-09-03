@@ -1056,6 +1056,7 @@ class AdditionalDetailsWidget extends Disposable {
 			const categoriesContainer = append(container, $('.categories-container.additional-details-element'));
 			append(categoriesContainer, $('.additional-details-title', undefined, localize('categories', "Categories")));
 			const categoriesElement = append(categoriesContainer, $('.categories'));
+			console.info('/////++++++ BEFORE 8 getExtensionGalleryManifest ');
 			this.extensionGalleryManifestService.getExtensionGalleryManifest()
 				.then(manifest => {
 					const hasCategoryFilter = manifest?.capabilities.extensionQuery.filtering?.some(({ name }) => name === FilterType.Category);

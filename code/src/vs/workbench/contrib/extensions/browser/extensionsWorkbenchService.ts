@@ -1400,6 +1400,7 @@ export class ExtensionsWorkbenchService extends Disposable implements IExtension
 
 		extensionInfos.forEach(e => e.preRelease = e.preRelease ?? this.extensionManagementService.preferPreReleases);
 		const extensionsControlManifest = await this.extensionManagementService.getExtensionsControlManifest();
+		///
 		console.info('//// BEFORE 21 getExtensions ');
 		
 		const galleryExtensions = await this.galleryService.getExtensions(extensionInfos, arg1, arg2);
@@ -2411,6 +2412,7 @@ export class ExtensionsWorkbenchService extends Disposable implements IExtension
 		if (extension.deprecationInfo?.disallowInstall) {
 			return new MarkdownString().appendText(nls.localize('disallowed', "This extension is disallowed to be installed."));
 		}
+		console.info('/////++++++ BEFORE getExtensionGalleryManifest ');
 		const manifest = await this.extensionGalleryManifestService.getExtensionGalleryManifest();
 		console.info('///////////// ++++++ canInstall ', manifest);
 		if (extension.gallery) {
@@ -2521,6 +2523,7 @@ export class ExtensionsWorkbenchService extends Disposable implements IExtension
 				if (!installable) {
 					if (!gallery) {
 						const id = isString(arg) ? arg : (<IExtension>arg).identifier.id;
+						console.info('/////++++++ BEFORE 2 getExtensionGalleryManifest ');
 						const manifest = await this.extensionGalleryManifestService.getExtensionGalleryManifest();
 						console.info('///////////// ++++++ installable ', manifest);
 						const reportIssueUri = manifest ? getExtensionGalleryManifestResourceUri(manifest, ExtensionGalleryResourceType.ContactSupportUri) : undefined;

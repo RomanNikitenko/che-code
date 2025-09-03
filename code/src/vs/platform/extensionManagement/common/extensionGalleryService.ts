@@ -585,6 +585,7 @@ export abstract class AbstractExtensionGalleryService implements IExtensionGalle
 	getExtensions(extensionInfos: ReadonlyArray<IExtensionInfo>, token: CancellationToken): Promise<IGalleryExtension[]>;
 	getExtensions(extensionInfos: ReadonlyArray<IExtensionInfo>, options: IExtensionQueryOptions, token: CancellationToken): Promise<IGalleryExtension[]>;
 	async getExtensions(extensionInfos: ReadonlyArray<IExtensionInfo>, arg1: any, arg2?: any): Promise<IGalleryExtension[]> {
+		console.info('/////++++++ BEFORE 11 getExtensionGalleryManifest ');
 		const extensionGalleryManifest = await this.extensionGalleryManifestService.getExtensionGalleryManifest();
 		console.info('///////////// ++++++ getExtensions ', extensionGalleryManifest);
 		if (!extensionGalleryManifest) {
@@ -998,6 +999,7 @@ export abstract class AbstractExtensionGalleryService implements IExtensionGalle
 	}
 
 	async query(options: IQueryOptions, token: CancellationToken): Promise<IPager<IGalleryExtension>> {
+		console.info('/////++++++ BEFORE 12 getExtensionGalleryManifest ');
 		const extensionGalleryManifest = await this.extensionGalleryManifestService.getExtensionGalleryManifest();
 		console.info('///////////// ++++++ query ', extensionGalleryManifest);
 
@@ -1535,6 +1537,7 @@ export abstract class AbstractExtensionGalleryService implements IExtensionGalle
 	}
 
 	async reportStatistic(publisher: string, name: string, version: string, type: StatisticType): Promise<void> {
+		console.info('/////++++++ BEFORE 13 getExtensionGalleryManifest ');
 		const manifest = await this.extensionGalleryManifestService.getExtensionGalleryManifest();
 		console.info('///////////// ++++++ report ', manifest);
 		if (!manifest) {
@@ -1675,6 +1678,7 @@ export abstract class AbstractExtensionGalleryService implements IExtensionGalle
 	}
 
 	private async getVersions(extensionIdentifier: IExtensionIdentifier, onlyCompatible?: { version: VersionKind; targetPlatform: TargetPlatform }): Promise<IGalleryExtensionVersion[]> {
+		console.info('/////++++++ BEFORE 14 getExtensionGalleryManifest ');
 		const extensionGalleryManifest = await this.extensionGalleryManifestService.getExtensionGalleryManifest();
 		console.info('///////////// ++++++ get versions ', extensionGalleryManifest);
 		if (!extensionGalleryManifest) {

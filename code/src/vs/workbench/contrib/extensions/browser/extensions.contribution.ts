@@ -561,6 +561,7 @@ class ExtensionsContributions extends Disposable implements IWorkbenchContributi
 			hasWebServerContext.set(true);
 		}
 
+		console.info('/////++++++ BEFORE 7 getExtensionGalleryManifest ');
 		extensionGalleryManifestService.getExtensionGalleryManifest()
 			.then(extensionGalleryManifest => {
 				this.registerGalleryCapabilitiesContexts(extensionGalleryManifest);

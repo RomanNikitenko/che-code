@@ -501,6 +501,7 @@ export class InstallAction extends ExtensionAction {
 			return;
 		}
 
+		console.info('/////++++++ BEFORE 5 getExtensionGalleryManifest ');
 		if (this.extension.gallery && !this.extension.gallery.isSigned && shouldRequireRepositorySignatureFor(this.extension.private, await this.extensionGalleryManifestService.getExtensionGalleryManifest())) {
 			const { result } = await this.dialogService.prompt({
 				type: Severity.Warning,
@@ -2587,6 +2588,7 @@ export class ExtensionStatusAction extends ExtensionAction {
 			return;
 		}
 
+		console.info('/////++++++ BEFORE 6 getExtensionGalleryManifest ');
 		if (this.extension.state === ExtensionState.Uninstalled && this.extension.gallery && !this.extension.gallery.isSigned && shouldRequireRepositorySignatureFor(this.extension.private, await this.extensionGalleryManifestService.getExtensionGalleryManifest())) {
 			this.updateStatus({ icon: warningIcon, message: new MarkdownString(localize('not signed tooltip', "This extension is not signed by the Extension Marketplace.")) }, true);
 			return;

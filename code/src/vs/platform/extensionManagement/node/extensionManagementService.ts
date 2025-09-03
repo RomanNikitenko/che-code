@@ -344,6 +344,7 @@ export class ExtensionManagementService extends AbstractExtensionManagementServi
 			verifySignature = isBoolean(value) ? value : true;
 		}
 		const { location, verificationStatus } = await this.extensionsDownloader.download(extension, operation, verifySignature, clientTargetPlatform);
+		console.info('/////++++++ BEFORE 10 getExtensionGalleryManifest ');
 		const manifest = await this.extensionGalleryManifestService.getExtensionGalleryManifest();
 		console.info('///////////// ++++++ downloadExtension ', manifest);
 		const shouldRequireSignature = shouldRequireRepositorySignatureFor(extension.private, manifest);
