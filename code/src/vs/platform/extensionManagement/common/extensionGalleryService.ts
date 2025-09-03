@@ -629,12 +629,16 @@ export abstract class AbstractExtensionGalleryService implements IExtensionGalle
 	}
 
 	private async getResourceApi(extensionGalleryManifest: IExtensionGalleryManifest, updateCheck: boolean): Promise<{ uri: string; fallback?: string } | undefined> {
+		console.error('+++++++++++++ getResourceApi');
 		const latestVersionResource = getExtensionGalleryManifestResourceUri(extensionGalleryManifest, ExtensionGalleryResourceType.ExtensionLatestVersionUri);
+		console.dir(latestVersionResource);
 		if (!latestVersionResource) {
+			console.error('+++++++++++++ getResourceApi ++++ RETURN UNDEFINED');
 			return undefined;
 		}
 
 		if (this.productService.quality !== 'stable') {
+			console.error('+++++++++++++ getResourceApi ++++ quality !== stable');
 			return {
 				uri: latestVersionResource,
 				fallback: this.unpkgResourceApi
@@ -646,6 +650,7 @@ export abstract class AbstractExtensionGalleryService implements IExtensionGalle
 			: await this.assignmentService?.getTreatment<'unpkg' | 'marketplace' | 'none'>('extensions.gallery.useLatestApi') ?? 'unpkg';
 
 		if (value === 'marketplace') {
+			console.error('+++++++++++++ getResourceApi ++++ value === marketplace');
 			return {
 				uri: latestVersionResource,
 				fallback: this.unpkgResourceApi
@@ -653,9 +658,11 @@ export abstract class AbstractExtensionGalleryService implements IExtensionGalle
 		}
 
 		if (value === 'unpkg' && this.unpkgResourceApi) {
+			console.error('+++++++++++++ getResourceApi ++++ value === unpkg');
 			return { uri: this.unpkgResourceApi };
 		}
 
+		console.error('+++++++++++++ getResourceApi ++++ undefined');
 		return undefined;
 	}
 
