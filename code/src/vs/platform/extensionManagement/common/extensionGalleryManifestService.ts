@@ -39,6 +39,8 @@ export class ExtensionGalleryManifestService extends Disposable implements IExte
 		if (!extensionsGallery?.serviceUrl) {
 			return null;
 		}
+		console.error('+++++ getExtensionGalleryManifest ++++ serviceUrl ', extensionsGallery?.serviceUrl);
+		console.error(`+++++ getExtensionGalleryManifest ++++ LATEST ${extensionsGallery.serviceUrl}/vscode/{publisher}/{name}/latest`);
 
 		const resources = [
 			{
