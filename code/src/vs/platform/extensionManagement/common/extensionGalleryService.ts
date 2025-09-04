@@ -594,7 +594,9 @@ export abstract class AbstractExtensionGalleryService implements IExtensionGalle
 		const options = CancellationToken.isCancellationToken(arg1) ? {} : arg1 as IExtensionQueryOptions;
 		const token = CancellationToken.isCancellationToken(arg1) ? arg1 : arg2 as CancellationToken;
 
-		console.info('/////++++++ BEFORE 1111111 +++ BEFORE resourceApi ');
+		console.info('/////++++++ BEFORE 1111111 +++ preferResourceApi ', options.preferResourceApi);
+		console.info('/////++++++ BEFORE 1111111 +++ UseUnpkgResourceApiConfigKey ', this.configurationService.getValue(UseUnpkgResourceApiConfigKey));
+
 		const resourceApi = (options.preferResourceApi && (this.configurationService.getValue(UseUnpkgResourceApiConfigKey) ?? false)) ? await this.getResourceApi(extensionGalleryManifest) : undefined;
 		console.info('/////++++++ BEFORE 1111111 +++ resourceApi ', resourceApi);
 		const result = resourceApi
