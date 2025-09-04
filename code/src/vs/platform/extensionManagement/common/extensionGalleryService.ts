@@ -667,7 +667,9 @@ export abstract class AbstractExtensionGalleryService implements IExtensionGalle
 	}
 
 	private async getExtensionsUsingQueryApi(extensionInfos: ReadonlyArray<IExtensionInfo>, options: IExtensionQueryOptions, extensionGalleryManifest: IExtensionGalleryManifest, token: CancellationToken): Promise<IGalleryExtension[]> {
-		console.info('/////++++++ getExtensionsUsingQueryApi ');
+		console.info('//////++++++ getExtensionsUsingQueryApi ');
+		console.dir(extensionInfos);
+		console.dir(extensionGalleryManifest);
 		const names: string[] = [],
 			ids: string[] = [],
 			includePreRelease: (IExtensionIdentifier & { includePreRelease: boolean })[] = [],
@@ -720,7 +722,10 @@ export abstract class AbstractExtensionGalleryService implements IExtensionGalle
 			token);
 
 		if (options.source) {
-			extensions.forEach((e, index) => setTelemetry(e, index, options.source));
+			extensions.forEach((e, index) => {
+				console.error('+++ EXT ', e.displayName, e.version);
+				setTelemetry(e, index, options.source);
+			});
 		}
 
 		return extensions;
@@ -830,6 +835,7 @@ export abstract class AbstractExtensionGalleryService implements IExtensionGalle
 	}
 
 	private async getLatestGalleryExtension(extensionInfo: IExtensionInfo, options: IExtensionQueryOptions, resourceUriTemplate: string, extensionGalleryManifest: IExtensionGalleryManifest, token: CancellationToken): Promise<IGalleryExtension | null | 'NOT_FOUND'> {
+		console.error('+++ GET LATEST');
 		const [publisher, name] = extensionInfo.id.split('.');
 		const uri = URI.parse(format2(resourceUriTemplate, { publisher, name }));
 		const rawGalleryExtension = await this.getLatestRawGalleryExtension(extensionInfo.id, uri, token);
