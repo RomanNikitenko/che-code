@@ -2423,42 +2423,63 @@ export class ExtensionsWorkbenchService extends Disposable implements IExtension
 
 			const localResult = this.localExtensions ? await this.localExtensions.canInstall(extension.gallery) : undefined;
 			if (localResult === true) {
+				console.info('///////////// ++++++ canInstall === localResult === true');
 				return true;
 			}
 
 			const remoteResult = this.remoteExtensions ? await this.remoteExtensions.canInstall(extension.gallery) : undefined;
 			if (remoteResult === true) {
+				console.info('///////////// ++++++ canInstall === remoteResult === true');
+
 				return true;
 			}
 
 			const webResult = this.webExtensions ? await this.webExtensions.canInstall(extension.gallery) : undefined;
 			if (webResult === true) {
+				console.info('///////////// ++++++ canInstall === webResult === true');
+
 				return true;
 			}
 
-			return localResult ?? remoteResult ?? webResult ?? new MarkdownString().appendText(nls.localize('cannot be installed', "Cannot install the '{0}' extension because it is not available in this setup.", extension.displayName ?? extension.identifier.id));
+			const ttt = localResult ?? remoteResult ?? webResult ?? new MarkdownString().appendText(nls.localize('cannot be installed', "Cannot install the '{0}' extension because it is not available in this setup.", extension.displayName ?? extension.identifier.id));
+			console.info('///////////// ++++++ canInstall === RETURN ', ttt);
+		}
+
+		if (extension.resourceExtension) {
+			console.info('///////////// ++++++ canInstall === extension.resourceExtension ');
+			const yy = await this.extensionManagementService.canInstall(extension.resourceExtension);
+			console.info('///////////// ++++++ canInstall === extension.resourceExtension + can install ??? ', yy);
+		} else {
+			console.info('///////////// ++++++ canInstall === NOT extension.resourceExtension ');
 		}
 
 		if (extension.resourceExtension && await this.extensionManagementService.canInstall(extension.resourceExtension) === true) {
+			console.info('///////////// ++++++ canInstall === extension.resourceExtension + can install !!! ');
 			return true;
 		}
 
+		console.info('///////////// ++++++ canInstall === can NOT install !!! ');
 		return new MarkdownString().appendText(nls.localize('cannot be installed', "Cannot install the '{0}' extension because it is not available in this setup.", extension.displayName ?? extension.identifier.id));
 	}
 
 	async install(arg: string | URI | IExtension, installOptions: InstallExtensionOptions = {}, progressLocation?: ProgressLocation | string): Promise<IExtension> {
+		console.info('///////////// ++++++ Install === ', arg);
 		let installable: URI | IGalleryExtension | IResourceExtension | undefined;
 		let extension: IExtension | undefined;
 		let servers: IExtensionManagementServer[] | undefined;
 
 		if (arg instanceof URI) {
+			console.info('///////////// ++++++ Install === URI ');
 			installable = arg;
 		} else {
+			console.info('///////////// ++++++ Install === NOT URI ');
+
 			let installableInfo: IExtensionInfo | undefined;
 			let gallery: IGalleryExtension | undefined;
 
 			// Install by id
 			if (isString(arg)) {
+				console.info('///////////// ++++++ Install === by ID ');
 				extension = this.local.find(e => areSameExtensions(e.identifier, { id: arg }));
 				if (!extension?.isBuiltin) {
 					installableInfo = { id: arg, version: installOptions.version, preRelease: installOptions.installPreReleaseVersion ?? this.extensionManagementService.preferPreReleases };
@@ -2466,6 +2487,7 @@ export class ExtensionsWorkbenchService extends Disposable implements IExtension
 			}
 			// Install by gallery
 			else if (arg.gallery) {
+				console.info('///////////// ++++++ Install === by galary ');
 				extension = arg;
 				gallery = arg.gallery;
 				if (installOptions.version && installOptions.version !== gallery?.version) {
@@ -2474,6 +2496,7 @@ export class ExtensionsWorkbenchService extends Disposable implements IExtension
 			}
 			// Install by resource
 			else if (arg.resourceExtension) {
+				console.info('///////////// ++++++ Install === by resource ');
 				extension = arg;
 				installable = arg.resourceExtension;
 			}

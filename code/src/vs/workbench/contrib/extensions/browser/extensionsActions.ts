@@ -2588,13 +2588,15 @@ export class ExtensionStatusAction extends ExtensionAction {
 			return;
 		}
 
-		console.info('/////++++++ BEFORE 6 getExtensionGalleryManifest ');
+		console.info('/////++++++ Extensions Actions BEFORE getExtensionGalleryManifest ');
 		if (this.extension.state === ExtensionState.Uninstalled && this.extension.gallery && !this.extension.gallery.isSigned && shouldRequireRepositorySignatureFor(this.extension.private, await this.extensionGalleryManifestService.getExtensionGalleryManifest())) {
 			this.updateStatus({ icon: warningIcon, message: new MarkdownString(localize('not signed tooltip', "This extension is not signed by the Extension Marketplace.")) }, true);
+			console.info('/////++++++ Extensions Actions === RETURN ');
 			return;
 		}
 
 		if (this.extension.deprecationInfo) {
+			console.info('/////++++++ Extensions Actions === deprecationInfo ');
 			if (this.extension.deprecationInfo.extension) {
 				const link = `[${this.extension.deprecationInfo.extension.displayName}](${URI.parse(`command:extension.open?${encodeURIComponent(JSON.stringify([this.extension.deprecationInfo.extension.id]))}`)})`;
 				this.updateStatus({ icon: warningIcon, message: new MarkdownString(localize('deprecated with alternate extension tooltip', "This extension is deprecated. Use the {0} extension instead.", link)) }, true);
@@ -2612,6 +2614,8 @@ export class ExtensionStatusAction extends ExtensionAction {
 		}
 
 		if (this.extension.missingFromGallery) {
+			console.info('/////++++++ Extensions Actions === missingFromGallery ');
+
 			this.updateStatus({ icon: warningIcon, message: new MarkdownString(localize('missing from gallery tooltip', "This extension is no longer available on the Extension Marketplace.")) }, true);
 			return;
 		}
@@ -2621,6 +2625,8 @@ export class ExtensionStatusAction extends ExtensionAction {
 		}
 
 		if (this.extension.outdated) {
+			console.info('/////++++++ Extensions Actions === outdated ');
+
 			const message = await this.extensionsWorkbenchService.shouldRequireConsentToUpdate(this.extension);
 			if (message) {
 				const markdown = new MarkdownString();
@@ -2638,10 +2644,15 @@ export class ExtensionStatusAction extends ExtensionAction {
 		}
 
 		if (this.extension.gallery && this.extension.state === ExtensionState.Uninstalled) {
+			console.info('/////++++++ Extensions Actions === BEFORE canInstall ');
+
 			const result = await this.extensionsWorkbenchService.canInstall(this.extension);
 			if (result !== true) {
+				console.info('/////++++++ Extensions Actions === AFTER canInstall === CAN NOT');
 				this.updateStatus({ icon: warningIcon, message: result }, true);
 				return;
+			} else {
+				console.info('/////++++++ Extensions Actions === BEFORE canInstall === CAN');
 			}
 		}
 
