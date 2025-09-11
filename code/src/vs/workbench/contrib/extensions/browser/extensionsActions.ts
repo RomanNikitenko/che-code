@@ -74,6 +74,7 @@ import { ActionWithDropdownActionViewItem, IActionWithDropdownActionViewItemOpti
 import { IAuthenticationUsageService } from '../../../services/authentication/browser/authenticationUsageService.js';
 import { IExtensionGalleryManifestService } from '../../../../platform/extensionManagement/common/extensionGalleryManifest.js';
 import { IWorkbenchIssueService } from '../../issue/common/issue.js';
+import { IUserDataProfilesService } from '../../../../platform/userDataProfile/common/userDataProfile.js';
 
 export class PromptExtensionInstallFailureAction extends Action {
 
@@ -261,6 +262,7 @@ export class PromptExtensionInstallFailureAction extends Action {
 			return undefined;
 		}
 
+		console.info('//// BEFORE 14 getExtensions ');
 		const [extension] = await this.galleryService.getExtensions([{
 			...this.extension.identifier,
 			version: this.version
@@ -499,6 +501,7 @@ export class InstallAction extends ExtensionAction {
 			return;
 		}
 
+		console.info('/////++++++ BEFORE 5 getExtensionGalleryManifest ');
 		if (this.extension.gallery && !this.extension.gallery.isSigned && shouldRequireRepositorySignatureFor(this.extension.private, await this.extensionGalleryManifestService.getExtensionGalleryManifest())) {
 			const { result } = await this.dialogService.prompt({
 				type: Severity.Warning,
@@ -893,6 +896,7 @@ export class UninstallAction extends ExtensionAction {
 
 	constructor(
 		@IExtensionsWorkbenchService private readonly extensionsWorkbenchService: IExtensionsWorkbenchService,
+		@IUserDataProfilesService private readonly userDataProfilesService: IUserDataProfilesService,
 		@IDialogService private readonly dialogService: IDialogService
 	) {
 		super('extensions.uninstall', UninstallAction.UninstallLabel, UninstallAction.UninstallClass, false);
@@ -914,7 +918,7 @@ export class UninstallAction extends ExtensionAction {
 			return;
 		}
 
-		this.label = UninstallAction.UninstallLabel;
+		this.label = this.extension.local?.isApplicationScoped && this.userDataProfilesService.profiles.length > 1 ? localize('uninstallAll', "Uninstall (All Profiles)") : UninstallAction.UninstallLabel;
 		this.class = UninstallAction.UninstallClass;
 		this.tooltip = UninstallAction.UninstallLabel;
 
@@ -1211,7 +1215,7 @@ export abstract class DropDownExtensionAction extends ExtensionAction {
 export class DropDownExtensionActionViewItem extends ActionViewItem {
 
 	constructor(
-		action: DropDownExtensionAction,
+		action: IAction,
 		options: IActionViewItemOptions,
 		@IContextMenuService private readonly contextMenuService: IContextMenuService
 	) {
@@ -2584,12 +2588,15 @@ export class ExtensionStatusAction extends ExtensionAction {
 			return;
 		}
 
+		console.info('/////++++++ Extensions Actions BEFORE getExtensionGalleryManifest ');
 		if (this.extension.state === ExtensionState.Uninstalled && this.extension.gallery && !this.extension.gallery.isSigned && shouldRequireRepositorySignatureFor(this.extension.private, await this.extensionGalleryManifestService.getExtensionGalleryManifest())) {
 			this.updateStatus({ icon: warningIcon, message: new MarkdownString(localize('not signed tooltip', "This extension is not signed by the Extension Marketplace.")) }, true);
+			console.info('/////++++++ Extensions Actions === RETURN ');
 			return;
 		}
 
 		if (this.extension.deprecationInfo) {
+			console.info('/////++++++ Extensions Actions === deprecationInfo ');
 			if (this.extension.deprecationInfo.extension) {
 				const link = `[${this.extension.deprecationInfo.extension.displayName}](${URI.parse(`command:extension.open?${encodeURIComponent(JSON.stringify([this.extension.deprecationInfo.extension.id]))}`)})`;
 				this.updateStatus({ icon: warningIcon, message: new MarkdownString(localize('deprecated with alternate extension tooltip', "This extension is deprecated. Use the {0} extension instead.", link)) }, true);
@@ -2606,11 +2613,20 @@ export class ExtensionStatusAction extends ExtensionAction {
 			return;
 		}
 
+		if (this.extension.missingFromGallery) {
+			console.info('/////++++++ Extensions Actions === missingFromGallery ');
+
+			this.updateStatus({ icon: warningIcon, message: new MarkdownString(localize('missing from gallery tooltip', "This extension is no longer available on the Extension Marketplace.")) }, true);
+			return;
+		}
+
 		if (this.extensionsWorkbenchService.canSetLanguage(this.extension)) {
 			return;
 		}
 
 		if (this.extension.outdated) {
+			console.info('/////++++++ Extensions Actions === outdated ');
+
 			const message = await this.extensionsWorkbenchService.shouldRequireConsentToUpdate(this.extension);
 			if (message) {
 				const markdown = new MarkdownString();
@@ -2628,10 +2644,15 @@ export class ExtensionStatusAction extends ExtensionAction {
 		}
 
 		if (this.extension.gallery && this.extension.state === ExtensionState.Uninstalled) {
+			console.info('/////++++++ Extensions Actions === BEFORE canInstall ');
+
 			const result = await this.extensionsWorkbenchService.canInstall(this.extension);
 			if (result !== true) {
+				console.info('/////++++++ Extensions Actions === AFTER canInstall === CAN NOT');
 				this.updateStatus({ icon: warningIcon, message: result }, true);
 				return;
+			} else {
+				console.info('/////++++++ Extensions Actions === BEFORE canInstall === CAN');
 			}
 		}
 
@@ -3070,6 +3091,7 @@ export class InstallLocalExtensionsInRemoteAction extends AbstractInstallExtensi
 		const targetPlatform = await this.extensionManagementServerService.remoteExtensionManagementServer!.extensionManagementService.getTargetPlatform();
 		await Promises.settled(localExtensionsToInstall.map(async extension => {
 			if (this.extensionGalleryService.isEnabled()) {
+				console.info('//// BEFORE 15 getExtensions ');
 				const gallery = (await this.extensionGalleryService.getExtensions([{ ...extension.identifier, preRelease: !!extension.local?.preRelease }], { targetPlatform, compatible: true }, CancellationToken.None))[0];
 				if (gallery) {
 					galleryExtensions.push(gallery);
@@ -3129,6 +3151,7 @@ export class InstallRemoteExtensionsInLocalAction extends AbstractInstallExtensi
 		const targetPlatform = await this.extensionManagementServerService.localExtensionManagementServer!.extensionManagementService.getTargetPlatform();
 		await Promises.settled(extensions.map(async extension => {
 			if (this.extensionGalleryService.isEnabled()) {
+				console.info('//// BEFORE 16 getExtensions ');
 				const gallery = (await this.extensionGalleryService.getExtensions([{ ...extension.identifier, preRelease: !!extension.local?.preRelease }], { targetPlatform, compatible: true }, CancellationToken.None))[0];
 				if (gallery) {
 					galleryExtensions.push(gallery);

@@ -37,6 +37,7 @@ export class ExtensionGalleryManifestIPCService extends ExtensionGalleryManifest
 	}
 
 	override async getExtensionGalleryManifest(): Promise<IExtensionGalleryManifest | null> {
+		console.info('/////++++++ BEFORE 15 getExtensionGalleryManifest ');
 		await this.barrier.wait();
 		return this.extensionGalleryManifest ?? null;
 	}
