@@ -65,7 +65,7 @@ interface IReplacementLocation {
 export class ConfigurationResolverExpression<T> implements IConfigurationResolverExpression<T> {
 	public static readonly VARIABLE_LHS = '${';
 
-	private locations = new Map<string, IReplacementLocation>();
+	private readonly locations = new Map<string, IReplacementLocation>();
 	private root: T;
 	private stringRoot: boolean;
 	/**
@@ -76,12 +76,17 @@ export class ConfigurationResolverExpression<T> implements IConfigurationResolve
 
 	private constructor(object: T) {
 		// If the input is a string, wrap it in an object so we can use the same logic
+		console.log('/////////////////////');
+		console.dir(object);
 		if (typeof object === 'string') {
 			this.stringRoot = true;
 			this.root = { value: object } as any;
+			console.log('/// string root ');
 		} else {
+			console.log('/// NOT string root ');
 			this.stringRoot = false;
 			this.root = structuredClone(object);
+			console.dir(this.root);
 		}
 	}
 
@@ -91,27 +96,45 @@ export class ConfigurationResolverExpression<T> implements IConfigurationResolve
 	 * applied during parsing.
 	 */
 	public static parse<T>(object: T): ConfigurationResolverExpression<T> {
+		console.info('============================== parse ');
+		console.dir(object);
 		if (object instanceof ConfigurationResolverExpression) {
 			return object;
 		}
 
 		const expr = new ConfigurationResolverExpression<T>(object);
+		console.info('=== parse === expr ');
+		console.dir(expr);
 		expr.applyPlatformSpecificKeys();
+		console.info('=== parse === after expr.applyPlatformSpecificKeys');
 		expr.parseObject(expr.root);
+		console.info('=== parse === after expr.parseObject');
 		return expr;
 	}
 
 	private applyPlatformSpecificKeys() {
+		console.info('++++++++++++++ applyPlatformSpecificKeys ');
+		console.info('+++ applyPlatformSpecificKeys +++ this.root ', this.root);
 		const config = this.root as any; // already cloned by ctor, safe to change
 		const key = isWindows ? 'windows' : isMacintosh ? 'osx' : isLinux ? 'linux' : undefined;
+		console.info('+++ applyPlatformSpecificKeys +++ key ', key);
 
 		if (key && config && typeof config === 'object' && config.hasOwnProperty(key)) {
-			Object.keys(config[key]).forEach(k => config[k] = config[key][k]);
+			console.info('+++ applyPlatformSpecificKeys +++ BEFORE foreach ', key);
+			Object.keys(config[key]).forEach(k => {
+				console.info('+++ applyPlatformSpecificKeys +++ foreach ', key);
+				console.dir(config);
+				config[k] = config[key][k];
+			});
 		}
+		console.info('+++ applyPlatformSpecificKeys +++ AFTER foreach ', key);
 
 		delete config.windows;
+		console.info('+++ applyPlatformSpecificKeys +++ AFTER delete windows');
 		delete config.osx;
+		console.info('+++ applyPlatformSpecificKeys +++ AFTER delete osx');
 		delete config.linux;
+		console.info('+++ applyPlatformSpecificKeys +++ AFTER delete linux');
 	}
 
 	private parseVariable(str: string, start: number): { replacement: Replacement; end: number } | undefined {
@@ -173,16 +196,13 @@ export class ConfigurationResolverExpression<T> implements IConfigurationResolve
 		}
 
 		for (const [key, value] of Object.entries(obj)) {
+			this.parseString(obj, key, key, true); // parse key
+
 			if (typeof value === 'string') {
 				this.parseString(obj, key, value);
 			} else {
 				this.parseObject(value);
 			}
-		}
-
-		// only after all values are marked for replacement, we can collect keys that have to be replaced
-		for (const [key] of Object.entries(obj)) {
-			this.parseString(obj, key, key, true);
 		}
 	}
 
@@ -281,13 +301,24 @@ export class ConfigurationResolverExpression<T> implements IConfigurationResolve
 			const newKey = propertyName.replaceAll(replacement.id, data.value);
 			delete object[propertyName];
 			object[newKey] = value;
+			this._renameKeyInLocations(object, propertyName, newKey);
 			this.parseString(object, newKey, data.value, true, path);
 		} else {
-			this.parseString(object, propertyName, data.value, false, path);
 			object[propertyName] = object[propertyName].replaceAll(replacement.id, data.value);
+			this.parseString(object, propertyName, data.value, false, path);
 		}
 
 		path.pop();
+	}
+
+	private _renameKeyInLocations(obj: object, oldKey: string, newKey: string) {
+		for (const location of this.locations.values()) {
+			for (const loc of location.locations) {
+				if (loc.object === obj && loc.propertyName === oldKey) {
+					loc.propertyName = newKey;
+				}
+			}
+		}
 	}
 
 	public toObject(): T {

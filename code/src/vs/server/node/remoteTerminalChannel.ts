@@ -223,6 +223,9 @@ export class RemoteTerminalChannel extends Disposable implements IServerChannel<
 		const activeWorkspaceFolder = args.activeWorkspaceFolder ? reviveWorkspaceFolder(args.activeWorkspaceFolder) : undefined;
 		const activeFileResource = args.activeFileResource ? URI.revive(uriTransformer.transformIncoming(args.activeFileResource)) : undefined;
 		const customVariableResolver = new CustomVariableResolver(baseEnv, workspaceFolders, activeFileResource, args.resolvedVariables, this._extensionManagementService);
+		console.info('!!!!!!!!!!!!! remote terminal ');
+		console.dir(activeWorkspaceFolder);
+		console.dir(process.env);
 		const variableResolver = terminalEnvironment.createVariableResolver(activeWorkspaceFolder, process.env, customVariableResolver);
 
 		// Get the initial cwd
