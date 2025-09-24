@@ -102,12 +102,21 @@ export class ConfigurationResolverExpression<T> implements IConfigurationResolve
 	}
 
 	private applyPlatformSpecificKeys() {
+		console.info('++++++++++++++ applyPlatformSpecificKeys ');
+		console.info('+++ applyPlatformSpecificKeys +++ this.root ', this.root);
 		const config = this.root as any; // already cloned by ctor, safe to change
 		const key = isWindows ? 'windows' : isMacintosh ? 'osx' : isLinux ? 'linux' : undefined;
+		console.info('+++ applyPlatformSpecificKeys +++ key ', key);
 
 		if (key && config && typeof config === 'object' && config.hasOwnProperty(key)) {
-			Object.keys(config[key]).forEach(k => config[k] = config[key][k]);
+			console.info('+++ applyPlatformSpecificKeys +++ BEFORE foreach ', key);
+			Object.keys(config[key]).forEach(k => {
+				console.info('+++ applyPlatformSpecificKeys +++ foreach ', key);
+				console.dir(config);
+				config[k] = config[key][k];
+			});
 		}
+		console.info('+++ applyPlatformSpecificKeys +++ AFTER foreach ', key);
 
 		delete config.windows;
 		delete config.osx;
