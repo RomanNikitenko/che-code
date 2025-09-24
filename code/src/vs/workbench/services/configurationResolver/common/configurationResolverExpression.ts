@@ -76,12 +76,17 @@ export class ConfigurationResolverExpression<T> implements IConfigurationResolve
 
 	private constructor(object: T) {
 		// If the input is a string, wrap it in an object so we can use the same logic
+		console.log('/////////////////////');
+		console.dir(object);
 		if (typeof object === 'string') {
 			this.stringRoot = true;
 			this.root = { value: object } as any;
+			console.log('/// string root ');
 		} else {
+			console.log('/// NOT string root ');
 			this.stringRoot = false;
 			this.root = structuredClone(object);
+			console.dir(this.root);
 		}
 	}
 
@@ -92,6 +97,7 @@ export class ConfigurationResolverExpression<T> implements IConfigurationResolve
 	 */
 	public static parse<T>(object: T): ConfigurationResolverExpression<T> {
 		console.info('============================== parse ');
+		console.dir(object);
 		if (object instanceof ConfigurationResolverExpression) {
 			return object;
 		}
