@@ -91,13 +91,18 @@ export class ConfigurationResolverExpression<T> implements IConfigurationResolve
 	 * applied during parsing.
 	 */
 	public static parse<T>(object: T): ConfigurationResolverExpression<T> {
+		console.info('============================== parse ');
 		if (object instanceof ConfigurationResolverExpression) {
 			return object;
 		}
 
 		const expr = new ConfigurationResolverExpression<T>(object);
+		console.info('=== parse === expr ');
+		console.dir(expr);
 		expr.applyPlatformSpecificKeys();
+		console.info('=== parse === after expr.applyPlatformSpecificKeys');
 		expr.parseObject(expr.root);
+		console.info('=== parse === after expr.parseObject');
 		return expr;
 	}
 
@@ -119,8 +124,11 @@ export class ConfigurationResolverExpression<T> implements IConfigurationResolve
 		console.info('+++ applyPlatformSpecificKeys +++ AFTER foreach ', key);
 
 		delete config.windows;
+		console.info('+++ applyPlatformSpecificKeys +++ AFTER delete windows');
 		delete config.osx;
+		console.info('+++ applyPlatformSpecificKeys +++ AFTER delete osx');
 		delete config.linux;
+		console.info('+++ applyPlatformSpecificKeys +++ AFTER delete linux');
 	}
 
 	private parseVariable(str: string, start: number): { replacement: Replacement; end: number } | undefined {
