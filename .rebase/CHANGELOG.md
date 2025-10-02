@@ -3,6 +3,41 @@
 The file to keep a list of changed files which will potentionaly help to resolve rebase conflicts.
 
 #### @RomanNikitenko
+https://github.com/che-incubator/che-code/pull/559
+
+- code/src/vs/workbench/contrib/webview/browser/pre/index.html
+- code/src/vs/platform/extensionManagement/common/extensionManagement.ts
+- code/src/vs/platform/extensionManagement/common/extensionGalleryService.ts
+- 
+---
+
+#### @sbouchet
+https://github.com/che-incubator/che-code/pull/572
+
+- code/package.json
+- code/build/package.json
+- code/remote/package.json
+---
+
+#### @sbouchet
+https://github.com/che-incubator/che-code/pull/563
+
+- code/package.json
+---
+
+#### @sbouchet
+https://github.com/che-incubator/che-code/pull/566
+
+- code/remote/package.json
+---
+
+#### @sbouchet
+https://github.com/che-incubator/che-code/pull/561
+
+- code/build/package.json
+---
+
+#### @RomanNikitenko
 https://github.com/che-incubator/che-code/pull/539
 
 - code/src/vs/platform/extensionManagement/common/abstractExtensionManagementService.ts
@@ -48,7 +83,6 @@ https://github.com/che-incubator/che-code/pull/528
 https://github.com/che-incubator/che-code/pull/526
 
 - code/package.json
-- code/src/vs/platform/utilityProcess/electron-main/utilityProcess.ts
 ---
 
 #### @svor
@@ -188,7 +222,6 @@ https://github.com/che-incubator/che-code/commit/eed0a5213ba1b29b810d53f6365aaa2
 #### @vitaliy-guliy
 https://github.com/che-incubator/che-code/pull/211
 
-- code/src/vs/workbench/contrib/webview/browser/pre/index-no-csp.html
 - code/src/vs/workbench/contrib/webview/browser/pre/index.html
 ---
 
