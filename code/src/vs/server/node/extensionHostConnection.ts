@@ -19,7 +19,7 @@ import { IRemoteExtensionHostStartParams } from '../../platform/remote/common/re
 import { getResolvedShellEnv } from '../../platform/shell/node/shellEnv.js';
 import { IExtensionHostStatusService } from './extensionHostStatusService.js';
 import { getNLSConfiguration } from './remoteLanguagePacks.js';
-import { getResolvedPathEnvVar } from './che/utils.js';
+// import { getResolvedPathEnvVar } from './che/utils.js';
 import { IServerEnvironmentService } from './serverEnvironmentService.js';
 import { IPCExtHostConnection, SocketExtHostConnection, writeExtHostConnection } from '../../workbench/services/extensions/common/extensionHostEnv.js';
 import { IExtHostReadyMessage, IExtHostReduceGraceTimeMessage, IExtHostSocketMessage } from '../../workbench/services/extensions/common/extensionHostProtocol.js';
@@ -58,7 +58,7 @@ export async function buildUserEnvironment(startParamsEnv: { [key: string]: stri
 	} else {
 		PATH = remoteCliBinFolder;
 	}
-	PATH = getResolvedPathEnvVar(PATH, processEnv.PATH);
+	// PATH = getResolvedPathEnvVar(PATH, processEnv.PATH);
 	setCaseInsensitive(env, 'PATH', PATH);
 
 	if (!environmentService.args['without-browser-env-var']) {

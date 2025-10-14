@@ -250,6 +250,9 @@ export class TerminalProcessManager extends Disposable implements ITerminalProce
 			this.backend = backend;
 
 			// Create variable resolver
+			console.info('!!!!!!!!!!!!! terminal process ');
+			console.dir(this._cwdWorkspaceFolder);
+			console.dir(this.remoteAuthority);
 			const variableResolver = terminalEnvironment.createVariableResolver(this._cwdWorkspaceFolder, await this._terminalProfileResolverService.getEnvironment(this.remoteAuthority), this._configurationResolverService);
 
 			// resolvedUserHome is needed here as remote resolvers can launch local terminals before

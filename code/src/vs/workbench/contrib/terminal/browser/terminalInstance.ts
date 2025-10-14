@@ -1145,7 +1145,7 @@ export class TerminalInstance extends Disposable implements ITerminalInstance {
 		}));
 		this._register(dom.addDisposableListener(xterm.raw.element, 'touchstart', () => {
 			xterm.raw.focus();
-		}));
+		}, { passive: true }));
 
 		// xterm.js currently drops selection on keyup as we need to handle this case.
 		this._register(dom.addDisposableListener(xterm.raw.element, 'keyup', () => {
