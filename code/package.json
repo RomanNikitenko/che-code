@@ -69,7 +69,7 @@
     "update-build-ts-version": "npm install typescript@next && tsc -p ./build/tsconfig.build.json"
   },
   "dependencies": {
-    "@microsoft/1ds-core-js": "^3.2.13",
+    "@microsoft/1ds-core-js": "^4.3.10",
     "@microsoft/1ds-post-js": "^3.2.13",
     "@parcel/watcher": "2.5.1",
     "@types/semver": "^7.5.8",
