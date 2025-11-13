@@ -32,11 +32,11 @@
   },
   "devDependencies": {
     "@types/fs-extra": "^9.0.13",
-    "@types/jest": "^27.4.1",
+    "@types/jest": "^30.0.0",
     "@types/js-yaml": "^4.0.5",
     "@types/node": "22.x",
     "add": "^2.0.6",
-    "jest": "27.3.1",
+    "jest": "30.2.0",
     "ts-jest": "^27.1.4"
   },
   "overrides": {
