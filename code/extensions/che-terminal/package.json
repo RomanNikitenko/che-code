@@ -39,13 +39,13 @@
     "license:generate": "podman run --rm -t -v $PWD:/workspace/project quay.io/che-incubator/dash-licenses:next"
     },
   "dependencies": {
-    "fs-extra": "^11.2.0",
+    "fs-extra": "^11.3.2",
     "js-yaml": "^4.1.0",
     "vscode-nls": "^5.2.0",
     "ws": "8.2.3"
   },
   "devDependencies": {
-    "@types/fs-extra": "^9.0.13",
+    "@types/fs-extra": "^11.0.4",
     "@types/js-yaml": "^4.0.5",
     "@types/ws": "8.2.0"
   },
