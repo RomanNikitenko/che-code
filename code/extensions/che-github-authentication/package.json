@@ -54,7 +54,7 @@
   },
   "dependencies": {
     "inversify": "^6.0.2",
-    "@devfile/api": "^2.3.0-1738854228",
+    "@devfile/api": "^2.3.0-1757407014",
     "@kubernetes/client-node": "^0.22.0",
     "uuid": "8.1.0",
     "@vscode/extension-telemetry": "0.7.5",
