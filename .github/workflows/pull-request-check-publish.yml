@@ -23,7 +23,7 @@ jobs:
     steps:
 
       - name: Download Pull Request Number artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v6
         with:
           name: pull-request-number
           run-id: ${{ github.event.workflow_run.id }}
@@ -44,7 +44,7 @@ jobs:
           docker system prune -af
 
       - name: Download che-code docker image artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v6
         with:
           pattern: che-*
           merge-multiple: true
