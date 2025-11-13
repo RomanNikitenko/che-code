@@ -78,15 +78,15 @@ jobs:
             echo "tag_suffix=${{ env.BRANCH_NAME }}" >> $GITHUB_ENV
           fi
       - name: Download linux-libc-ubi8-amd64 image
-        uses: ishworkh/container-image-artifact-download@v2.0.0
+        uses: ishworkh/container-image-artifact-download@v2.1.0
         with:
           image: "linux-libc-ubi8-${{env.arch}}"
       - name: Download linux-libc-ubi9-amd64 image
-        uses: ishworkh/container-image-artifact-download@v2.0.0
+        uses: ishworkh/container-image-artifact-download@v2.1.0
         with:
           image: "linux-libc-ubi9-${{env.arch}}"
       - name: Download linux-musl image
-        uses: ishworkh/container-image-artifact-download@v2.0.0
+        uses: ishworkh/container-image-artifact-download@v2.1.0
         with:
           image: "linux-musl-${{env.arch}}"
       - name: Display docker images
