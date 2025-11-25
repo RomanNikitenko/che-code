@@ -369,11 +369,11 @@ export class BrowserMain extends Disposable {
 				const logService = accessor.get(ILogService);
 
 				const result = await fileDialogService.showOpenDialog({
-					title: localize2('selectPoliciesJson', "Select policies.json"),
+					title: localize('selectPoliciesJson', "Select policies.json"),
 					canSelectFiles: true,
 					canSelectFolders: false,
 					canSelectMany: false,
-					filters: [{ name: localize2('jsonFiles', "JSON"), extensions: ['json'] }],
+					filters: [{ name: localize('jsonFiles', "JSON"), extensions: ['json'] }],
 					availableFileSystems: [Schemas.file]
 				});
 				const picked = result?.[0];
