@@ -347,51 +347,6 @@ export class BrowserMain extends Disposable {
 		serviceCollection.set(IRemoteAgentService, remoteAgentService);
 		this._register(RemoteFileSystemProviderClient.register(remoteAgentService, fileService, logService));
 
-		// Policies (file-based in web)
-		const policyFile = joinPath(environmentService.userRoamingDataHome, 'policies.json');
-		const policyService = new FilePolicyService(policyFile, fileService, logService);
-		serviceCollection.set(IPolicyService, policyService);
-
-		// Action: Import policies.json from local file system into user data
-		this._register(registerAction2(class ImportPoliciesFromFileAction extends Action2 {
-			constructor() {
-				super({
-					id: 'workbench.action.importPoliciesFromFile',
-					title: localize2('importPoliciesFromFile', "Import Policies from File"),
-					category: Categories.Developer,
-					menu: { id: MenuId.CommandPalette }
-				});
-			}
-			async run(accessor: ServicesAccessor): Promise<void> {
-				const fileDialogService = accessor.get(IFileDialogService);
-				const fileService = accessor.get(IFileService);
-				const envService = accessor.get(IBrowserWorkbenchEnvironmentService);
-				const logService = accessor.get(ILogService);
-
-				const result = await fileDialogService.showOpenDialog({
-					title: localize('selectPoliciesJson', "Select policies.json"),
-					canSelectFiles: true,
-					canSelectFolders: false,
-					canSelectMany: false,
-					filters: [{ name: localize('jsonFiles', "JSON"), extensions: ['json'] }],
-					availableFileSystems: [Schemas.file]
-				});
-				const picked = result?.[0];
-				if (!picked) {
-					return;
-				}
-
-				try {
-					const content = await fileService.readFile(picked);
-					const destination = joinPath(envService.userRoamingDataHome, 'policies.json');
-					await fileService.writeFile(destination, content.value);
-					logService.info('Policies imported to', String(destination));
-				} catch (error) {
-					logService.error('Failed to import policies.json', error);
-				}
-			}
-		}));
-
 		// Long running services (workspace, config, storage)
 		const [configurationService, storageService] = await Promise.all([
 			this.createWorkspaceService(workspace, environmentService, userDataProfileService, userDataProfilesService, fileService, remoteAgentService, uriIdentityService, policyService, logService).then(service => {
@@ -414,22 +369,17 @@ export class BrowserMain extends Disposable {
 			})
 		]);
 
-		// If workspace has a .vscode/policies.json, copy it into user data so FilePolicyService can consume it
 		try {
 			const folders = configurationService.getWorkspace().folders;
+			console.log('!!!!!!!!! before');
 			if (folders.length) {
 				const workspacePolicies = joinPath(folders[0].uri, '.vscode', 'policies.json');
-				const destPolicies = joinPath(environmentService.userRoamingDataHome, 'policies.json');
-				try {
-					const content = await fileService.readFile(workspacePolicies);
-					await fileService.writeFile(destPolicies, content.value);
-					logService.info('Loaded policies from workspace:', String(workspacePolicies));
-				} catch {
-					// ignore if not present
-				}
+				console.log('!!! workspacePolicies', workspacePolicies);
+				const policyService = new FilePolicyService(workspacePolicies, fileService, logService);
+				serviceCollection.set(IPolicyService, policyService);
 			}
 		} catch {
-			// ignore
+			console.log('!!! workspacePolicies ERROR ');
 		}
 
 		// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
