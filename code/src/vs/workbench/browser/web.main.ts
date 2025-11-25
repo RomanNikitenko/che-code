@@ -96,7 +96,6 @@ import { TunnelSource } from '../services/remote/common/tunnelModel.js';
 import { mainWindow } from '../../base/browser/window.js';
 import { INotificationService, Severity } from '../../platform/notification/common/notification.js';
 import { FilePolicyService } from '../../platform/policy/common/filePolicyService.js';
-import { IFileDialogService } from '../../platform/dialogs/common/dialogs.js';
 
 export class BrowserMain extends Disposable {
 
