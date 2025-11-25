@@ -414,6 +414,24 @@ export class BrowserMain extends Disposable {
 			})
 		]);
 
+		// If workspace has a .vscode/policies.json, copy it into user data so FilePolicyService can consume it
+		try {
+			const folders = configurationService.getWorkspace().folders;
+			if (folders.length) {
+				const workspacePolicies = joinPath(folders[0].uri, '.vscode', 'policies.json');
+				const destPolicies = joinPath(environmentService.userRoamingDataHome, 'policies.json');
+				try {
+					const content = await fileService.readFile(workspacePolicies);
+					await fileService.writeFile(destPolicies, content.value);
+					logService.info('Loaded policies from workspace:', String(workspacePolicies));
+				} catch {
+					// ignore if not present
+				}
+			}
+		} catch {
+			// ignore
+		}
+
 		// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 		//
 		// NOTE: Please do NOT register services here. Use `registerSingleton()`
