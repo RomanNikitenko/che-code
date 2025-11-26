@@ -144,7 +144,7 @@ export async function setupServerServices(connectionToken: ServerConnectionToken
 	const policyPath = process.env['VSCODE_POLICY_FILE'];
 	console.log('++++++++ policyPath ', policyPath);
 	const policyService = policyPath ? new FilePolicyService(URI.file(policyPath), fileService, logService) : new NullPolicyService();
-	const configurationService = new ConfigurationService(environmentService.machineSettingsResource, fileService, policyService, logService);
+	const configurationService = new ConfigurationService(environmentService.userRoamingDataHome, fileService, policyService, logService);
 	services.set(IConfigurationService, configurationService);
 
 	// User Data Profiles
@@ -163,6 +163,16 @@ export async function setupServerServices(connectionToken: ServerConnectionToken
 		getSqmMachineId(logService.error.bind(logService)),
 		getDevDeviceId(logService.error.bind(logService))
 	]);
+
+	// Debug: log effective and policy values for extensions.allowed
+	try {
+		const inspected = configurationService.inspect('extensions.allowed');
+		const pv = inspected.policyValue !== undefined ? JSON.stringify(inspected.policyValue) : 'undefined';
+		const ev = inspected.value !== undefined ? JSON.stringify(inspected.value) : 'undefined';
+		logService.info('[Policy] extensions.allowed policyValue:', pv, 'effectiveValue:', ev);
+	} catch (err) {
+		logService.error('[Policy] Failed to inspect extensions.allowed', err);
+	}
 
 	const extensionHostStatusService = new ExtensionHostStatusService();
 	services.set(IExtensionHostStatusService, extensionHostStatusService);
