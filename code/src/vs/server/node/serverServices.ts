@@ -142,6 +142,7 @@ export async function setupServerServices(connectionToken: ServerConnectionToken
 
 	// Configuration (optional server-side policy file via env VSCODE_POLICY_FILE)
 	const policyPath = process.env['VSCODE_POLICY_FILE'];
+	console.log('++++++++ policyPath ', policyPath);
 	const policyService = policyPath ? new FilePolicyService(URI.file(policyPath), fileService, logService) : new NullPolicyService();
 	const configurationService = new ConfigurationService(environmentService.machineSettingsResource, fileService, policyService, logService);
 	services.set(IConfigurationService, configurationService);
