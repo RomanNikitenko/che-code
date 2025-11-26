@@ -346,6 +346,11 @@ export class BrowserMain extends Disposable {
 		serviceCollection.set(IRemoteAgentService, remoteAgentService);
 		this._register(RemoteFileSystemProviderClient.register(remoteAgentService, fileService, logService));
 
+		// Policies (file-based in web)
+		const policyFile = joinPath(environmentService.userRoamingDataHome, 'policies.json');
+		const policyService = new FilePolicyService(policyFile, fileService, logService);
+		serviceCollection.set(IPolicyService, policyService);
+
 		// Long running services (workspace, config, storage)
 		const [configurationService, storageService] = await Promise.all([
 			this.createWorkspaceService(workspace, environmentService, userDataProfileService, userDataProfilesService, fileService, remoteAgentService, uriIdentityService, policyService, logService).then(service => {
@@ -368,17 +373,22 @@ export class BrowserMain extends Disposable {
 			})
 		]);
 
+		// If workspace has a .vscode/policies.json, copy it into user data so FilePolicyService can consume it
 		try {
 			const folders = configurationService.getWorkspace().folders;
-			console.log('!!!!!!!!! before');
 			if (folders.length) {
 				const workspacePolicies = joinPath(folders[0].uri, '.vscode', 'policies.json');
-				console.log('!!! workspacePolicies', workspacePolicies);
-				const policyService = new FilePolicyService(workspacePolicies, fileService, logService);
-				serviceCollection.set(IPolicyService, policyService);
+				const destPolicies = joinPath(environmentService.userRoamingDataHome, 'policies.json');
+				try {
+					const content = await fileService.readFile(workspacePolicies);
+					await fileService.writeFile(destPolicies, content.value);
+					logService.info('Loaded policies from workspace:', String(workspacePolicies));
+				} catch {
+					// ignore if not present
+				}
 			}
 		} catch {
-			console.log('!!! workspacePolicies ERROR ');
+			// ignore
 		}
 
 		// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

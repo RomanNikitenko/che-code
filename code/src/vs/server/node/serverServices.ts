@@ -66,6 +66,8 @@ import { ExtensionsScannerService } from './extensionsScannerService.js';
 import { IExtensionsProfileScannerService } from '../../platform/extensionManagement/common/extensionsProfileScannerService.js';
 import { IUserDataProfilesService } from '../../platform/userDataProfile/common/userDataProfile.js';
 import { NullPolicyService } from '../../platform/policy/common/policy.js';
+import { FilePolicyService } from '../../platform/policy/common/filePolicyService.js';
+import { URI } from '../../base/common/uri.js';
 import { OneDataSystemAppender } from '../../platform/telemetry/node/1dsAppender.js';
 import { LoggerService } from '../../platform/log/node/loggerService.js';
 import { ServerUserDataProfilesService } from '../../platform/userDataProfile/node/userDataProfile.js';
@@ -138,8 +140,10 @@ export async function setupServerServices(connectionToken: ServerConnectionToken
 	const uriIdentityService = new UriIdentityService(fileService);
 	services.set(IUriIdentityService, uriIdentityService);
 
-	// Configuration
-	const configurationService = new ConfigurationService(environmentService.machineSettingsResource, fileService, new NullPolicyService(), logService);
+	// Configuration (optional server-side policy file via env VSCODE_POLICY_FILE)
+	const policyPath = process.env['VSCODE_POLICY_FILE'];
+	const policyService = policyPath ? new FilePolicyService(URI.file(policyPath), fileService, logService) : new NullPolicyService();
+	const configurationService = new ConfigurationService(environmentService.machineSettingsResource, fileService, policyService, logService);
 	services.set(IConfigurationService, configurationService);
 
 	// User Data Profiles
