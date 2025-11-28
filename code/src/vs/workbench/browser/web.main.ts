@@ -68,7 +68,7 @@ import { IProgressService } from '../../platform/progress/common/progress.js';
 import { DelayedLogChannel } from '../services/output/common/delayedLogChannel.js';
 import { dirname, joinPath } from '../../base/common/resources.js';
 import { IUserDataProfile, IUserDataProfilesService } from '../../platform/userDataProfile/common/userDataProfile.js';
-import { NullPolicyService } from '../../platform/policy/common/policy.js';
+import { IPolicyService } from '../../platform/policy/common/policy.js';
 import { IRemoteExplorerService } from '../services/remote/common/remoteExplorerService.js';
 import { DisposableTunnel, TunnelProtocol } from '../../platform/tunnel/common/tunnel.js';
 import { ILabelService } from '../../platform/label/common/label.js';
@@ -95,6 +95,7 @@ import { ISecretStorageService } from '../../platform/secrets/common/secrets.js'
 import { TunnelSource } from '../services/remote/common/tunnelModel.js';
 import { mainWindow } from '../../base/browser/window.js';
 import { INotificationService, Severity } from '../../platform/notification/common/notification.js';
+import { FilePolicyService } from '../../platform/policy/common/filePolicyService.js';
 
 export class BrowserMain extends Disposable {
 
@@ -345,9 +346,14 @@ export class BrowserMain extends Disposable {
 		serviceCollection.set(IRemoteAgentService, remoteAgentService);
 		this._register(RemoteFileSystemProviderClient.register(remoteAgentService, fileService, logService));
 
+		// Policies (file-based in web)
+		const policyFile = joinPath(environmentService.userRoamingDataHome, 'policies.json');
+		const policyService = new FilePolicyService(policyFile, fileService, logService);
+		serviceCollection.set(IPolicyService, policyService);
+
 		// Long running services (workspace, config, storage)
 		const [configurationService, storageService] = await Promise.all([
-			this.createWorkspaceService(workspace, environmentService, userDataProfileService, userDataProfilesService, fileService, remoteAgentService, uriIdentityService, logService).then(service => {
+			this.createWorkspaceService(workspace, environmentService, userDataProfileService, userDataProfilesService, fileService, remoteAgentService, uriIdentityService, policyService, logService).then(service => {
 
 				// Workspace
 				serviceCollection.set(IWorkspaceContextService, service);
@@ -366,6 +372,24 @@ export class BrowserMain extends Disposable {
 				return service;
 			})
 		]);
+
+		// If workspace has a .vscode/policies.json, copy it into user data so FilePolicyService can consume it
+		try {
+			const folders = configurationService.getWorkspace().folders;
+			if (folders.length) {
+				const workspacePolicies = joinPath(folders[0].uri, '.vscode', 'policies.json');
+				const destPolicies = joinPath(environmentService.userRoamingDataHome, 'policies.json');
+				try {
+					const content = await fileService.readFile(workspacePolicies);
+					await fileService.writeFile(destPolicies, content.value);
+					logService.info('Loaded policies from workspace:', String(workspacePolicies));
+				} catch {
+					// ignore if not present
+				}
+			}
+		} catch {
+			// ignore
+		}
 
 		// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 		//
@@ -551,7 +575,7 @@ export class BrowserMain extends Disposable {
 		}
 	}
 
-	private async createWorkspaceService(workspace: IAnyWorkspaceIdentifier, environmentService: IBrowserWorkbenchEnvironmentService, userDataProfileService: IUserDataProfileService, userDataProfilesService: IUserDataProfilesService, fileService: FileService, remoteAgentService: IRemoteAgentService, uriIdentityService: IUriIdentityService, logService: ILogService): Promise<WorkspaceService> {
+	private async createWorkspaceService(workspace: IAnyWorkspaceIdentifier, environmentService: IBrowserWorkbenchEnvironmentService, userDataProfileService: IUserDataProfileService, userDataProfilesService: IUserDataProfilesService, fileService: FileService, remoteAgentService: IRemoteAgentService, uriIdentityService: IUriIdentityService, policyService: IPolicyService, logService: ILogService): Promise<WorkspaceService> {
 
 		// Temporary workspaces do not exist on startup because they are
 		// just in memory. As such, detect this case and eagerly create
@@ -567,7 +591,7 @@ export class BrowserMain extends Disposable {
 		}
 
 		const configurationCache = new ConfigurationCache([Schemas.file, Schemas.vscodeUserData, Schemas.tmp] /* Cache all non native resources */, environmentService, fileService);
-		const workspaceService = new WorkspaceService({ remoteAuthority: this.configuration.remoteAuthority, configurationCache }, environmentService, userDataProfileService, userDataProfilesService, fileService, remoteAgentService, uriIdentityService, logService, new NullPolicyService());
+		const workspaceService = new WorkspaceService({ remoteAuthority: this.configuration.remoteAuthority, configurationCache }, environmentService, userDataProfileService, userDataProfilesService, fileService, remoteAgentService, uriIdentityService, logService, policyService);
 
 		try {
 			await workspaceService.initialize(workspace);

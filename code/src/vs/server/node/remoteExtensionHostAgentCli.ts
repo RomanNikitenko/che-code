@@ -44,6 +44,7 @@ import { ExtensionsScannerService } from './extensionsScannerService.js';
 import { IUserDataProfilesService } from '../../platform/userDataProfile/common/userDataProfile.js';
 import { IExtensionsProfileScannerService } from '../../platform/extensionManagement/common/extensionsProfileScannerService.js';
 import { NullPolicyService } from '../../platform/policy/common/policy.js';
+import { FilePolicyService } from '../../platform/policy/common/filePolicyService.js';
 import { ServerUserDataProfilesService } from '../../platform/userDataProfile/node/userDataProfile.js';
 import { ExtensionsProfileScannerService } from '../../platform/extensionManagement/node/extensionsProfileScannerService.js';
 import { LogService } from '../../platform/log/common/logService.js';
@@ -120,8 +121,10 @@ class CliMain extends Disposable {
 		const userDataProfilesService = this._register(new ServerUserDataProfilesService(uriIdentityService, environmentService, fileService, logService));
 		services.set(IUserDataProfilesService, userDataProfilesService);
 
-		// Configuration
-		const configurationService = this._register(new ConfigurationService(userDataProfilesService.defaultProfile.settingsResource, fileService, new NullPolicyService(), logService));
+		// Configuration (optional server-side policy file via env VSCODE_POLICY_FILE)
+		const policyPath = process.env['VSCODE_POLICY_FILE'];
+		const policyService = policyPath ? new FilePolicyService(URI.file(policyPath), fileService, logService) : new NullPolicyService();
+		const configurationService = this._register(new ConfigurationService(userDataProfilesService.defaultProfile.settingsResource, fileService, policyService, logService));
 		services.set(IConfigurationService, configurationService);
 
 		// Initialize
