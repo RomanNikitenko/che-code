@@ -46,7 +46,7 @@
     "@types/js-yaml": "^4.0.5",
     "@types/node": "22.x",
     "jest": "^27.4.7",
-    "ts-jest": "^27.1.2",
+    "ts-jest": "^29.4.5",
     "webpack-node-externals": "^3.0.0"
   },
   "overrides": {
