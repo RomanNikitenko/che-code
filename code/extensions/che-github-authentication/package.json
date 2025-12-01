@@ -53,7 +53,7 @@
     "license:generate": "podman run --rm -t -v $PWD:/workspace/project quay.io/che-incubator/dash-licenses:next"
   },
   "dependencies": {
-    "inversify": "^6.0.2",
+    "inversify": "^7.10.4",
     "@devfile/api": "^2.3.0-1738854228",
     "@kubernetes/client-node": "^0.22.0",
     "uuid": "8.1.0",
