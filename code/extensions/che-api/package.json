@@ -35,7 +35,7 @@
     "@kubernetes/client-node": "^0.22.0",
     "fs-extra": "^11.2.0",
     "inversify": "^6.0.2",
-    "js-yaml": "^4.1.0",
+    "js-yaml": "^4.1.1",
     "reflect-metadata": "^0.2.2",
     "vscode-nls": "^5.0.0",
     "@eclipse-che/workspace-telemetry-client": "^0.0.1-1685523760"
