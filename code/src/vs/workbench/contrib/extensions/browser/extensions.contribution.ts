@@ -25,7 +25,7 @@ import { Extensions as ConfigurationExtensions, ConfigurationScope, IConfigurati
 import { ContextKeyExpr, IContextKeyService, RawContextKey } from '../../../../platform/contextkey/common/contextkey.js';
 import { IDialogService, IFileDialogService } from '../../../../platform/dialogs/common/dialogs.js';
 import { ExtensionGalleryManifestStatus, ExtensionGalleryResourceType, ExtensionGalleryServiceUrlConfigKey, getExtensionGalleryManifestResourceUri, IExtensionGalleryManifest, IExtensionGalleryManifestService } from '../../../../platform/extensionManagement/common/extensionGalleryManifest.js';
-import { EXTENSION_INSTALL_SOURCE_CONTEXT, ExtensionInstallSource, ExtensionsLocalizedLabel, FilterType, IExtensionGalleryService, IExtensionManagementService, PreferencesLocalizedLabel, SortBy, VerifyExtensionSignatureConfigKey } from '../../../../platform/extensionManagement/common/extensionManagement.js';
+import { EXTENSION_INSTALL_SOURCE_CONTEXT, ExtensionInstallSource, ExtensionsLocalizedLabel, FilterType, IAllowedExtensionsService, IExtensionGalleryService, IExtensionManagementService, PreferencesLocalizedLabel, SortBy, VerifyExtensionSignatureConfigKey } from '../../../../platform/extensionManagement/common/extensionManagement.js';
 import { areSameExtensions, getIdAndVersion } from '../../../../platform/extensionManagement/common/extensionManagementUtil.js';
 import { ExtensionStorageService } from '../../../../platform/extensionManagement/common/extensionStorage.js';
 import { IExtensionRecommendationNotificationService } from '../../../../platform/extensionRecommendations/common/extensionRecommendations.js';
@@ -57,6 +57,7 @@ import { IExtensionIgnoredRecommendationsService, IExtensionRecommendationsServi
 import { IWorkspaceExtensionsConfigService } from '../../../services/extensionRecommendations/common/workspaceExtensionsConfig.js';
 import { IHostService } from '../../../services/host/browser/host.js';
 import { LifecyclePhase } from '../../../services/lifecycle/common/lifecycle.js';
+import { IBrowserWorkbenchEnvironmentService } from '../../../services/environment/browser/environmentService.js';
 import { IPreferencesService } from '../../../services/preferences/common/preferences.js';
 import { CONTEXT_SYNC_ENABLEMENT } from '../../../services/userDataSync/common/userDataSync.js';
 import { IViewsService } from '../../../services/views/common/viewsService.js';
@@ -2016,6 +2017,19 @@ class TrustedPublishersInitializer implements IWorkbenchContribution {
 	}
 }
 
+class DefaultExtensionsInitializer implements IWorkbenchContribution {
+	constructor(
+		@IAllowedExtensionsService allowedExtensionsService: IAllowedExtensionsService,
+		@IBrowserWorkbenchEnvironmentService environmentService: IBrowserWorkbenchEnvironmentService,
+	) {
+		// Initialize AllowedExtensionsService with DEFAULT_EXTENSIONS from environment service
+		// This allows the service to validate extensions against the environment variable
+		if (environmentService.defaultExtensions) {
+			(allowedExtensionsService as any).setDefaultExtensionsEnv(environmentService.defaultExtensions);
+		}
+	}
+}
+
 class ExtensionToolsContribution extends Disposable implements IWorkbenchContribution {
 
 	static readonly ID = 'extensions.chat.toolsContribution';
@@ -2043,6 +2057,7 @@ workbenchRegistry.registerWorkbenchContribution(ExtensionsCompletionItemsProvide
 workbenchRegistry.registerWorkbenchContribution(UnsupportedExtensionsMigrationContrib, LifecyclePhase.Eventually);
 workbenchRegistry.registerWorkbenchContribution(TrustedPublishersInitializer, LifecyclePhase.Eventually);
 workbenchRegistry.registerWorkbenchContribution(ExtensionMarketplaceStatusUpdater, LifecyclePhase.Eventually);
+workbenchRegistry.registerWorkbenchContribution(DefaultExtensionsInitializer, LifecyclePhase.Restored);
 if (isWeb) {
 	workbenchRegistry.registerWorkbenchContribution(ExtensionStorageCleaner, LifecyclePhase.Eventually);
 }

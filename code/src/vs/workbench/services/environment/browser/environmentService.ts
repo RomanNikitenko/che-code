@@ -37,6 +37,12 @@ export interface IBrowserWorkbenchEnvironmentService extends IWorkbenchEnvironme
 	 * Gets whether a resolver extension is expected for the environment.
 	 */
 	readonly expectsResolverExtension: boolean;
+
+	/**
+	 * Gets the DEFAULT_EXTENSIONS environment variable value.
+	 * This is a semicolon-separated list of extension IDs that should be installed by default.
+	 */
+	readonly defaultExtensions?: string;
 }
 
 export class BrowserWorkbenchEnvironmentService implements IBrowserWorkbenchEnvironmentService {
