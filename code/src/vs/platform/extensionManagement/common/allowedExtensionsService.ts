@@ -94,6 +94,7 @@ export class AllowedExtensionsService extends Disposable implements IAllowedExte
 		// This allows server-side configuration via environment variable.
 		// If an extension is in DEFAULT_EXTENSIONS, it's automatically allowed.
 		const defaultExtensionsEnv = this.getDefaultExtensionsEnv();
+		console.log('!!!!!!!!!!!! isAllowed ', defaultExtensionsEnv);
 		
 		if (defaultExtensionsEnv) {
 			const defaultExtensions = defaultExtensionsEnv.split(';').filter(value => value.trim());
