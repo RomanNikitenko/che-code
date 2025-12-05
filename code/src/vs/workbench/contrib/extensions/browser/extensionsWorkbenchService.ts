@@ -21,6 +21,7 @@ import {
 	TargetPlatformToString,
 	IAllowedExtensionsService,
 	AllowedExtensionsConfigKey,
+	BlockNonGalleryExtensionsConfigKey,
 	EXTENSION_INSTALL_SKIP_PUBLISHER_TRUST_CONTEXT,
 	ExtensionManagementError,
 	ExtensionManagementErrorCode,
@@ -2406,26 +2407,56 @@ export class ExtensionsWorkbenchService extends Disposable implements IExtension
 		}
 
 		if (extension.gallery) {
+			console.log('+++++++ extension.gallery ');
+			console.log('+++ ', extension.gallery);
+			console.log('+++ ', extension.displayName);
+			// Check if extension is allowed first (before checking platform compatibility or signing)
+			const allowedResult = this.allowedExtensionsService.isAllowed({ id: extension.gallery.identifier.id, publisherDisplayName: extension.gallery.publisherDisplayName });
+			if (allowedResult !== true) {
+				console.log('+++ extension.gallery +++ RETURN 1');
+				return new MarkdownString(nls.localize('extension not allowed to install', "This extension cannot be installed because it is not in the allowed list."));
+			}
+
 			if (!extension.gallery.isSigned && shouldRequireRepositorySignatureFor(extension.private, await this.extensionGalleryManifestService.getExtensionGalleryManifest())) {
+				console.log('+++ extension.gallery +++ RETURN 2');
 				return new MarkdownString().appendText(nls.localize('not signed', "This extension is not signed."));
 			}
 
 			const localResult = this.localExtensions ? await this.localExtensions.canInstall(extension.gallery) : undefined;
 			if (localResult === true) {
+				console.log('+++ extension.gallery +++ RETURN 3');
 				return true;
 			}
 
 			const remoteResult = this.remoteExtensions ? await this.remoteExtensions.canInstall(extension.gallery) : undefined;
 			if (remoteResult === true) {
+				console.log('+++ extension.gallery +++ RETURN 4');
 				return true;
 			}
 
 			const webResult = this.webExtensions ? await this.webExtensions.canInstall(extension.gallery) : undefined;
 			if (webResult === true) {
+				console.log('+++ extension.gallery +++ RETURN 5');
 				return true;
 			}
 
+			console.log('+++ extension.gallery +++ RETURN 6');
 			return localResult ?? remoteResult ?? webResult ?? new MarkdownString().appendText(nls.localize('cannot be installed', "Cannot install the '{0}' extension because it is not available in this setup.", extension.displayName ?? extension.identifier.id));
+		} else {
+			console.log('+++++++ NOT extension.gallery ');
+		}
+
+		// Block non-gallery extensions if the policy is configured and blockNonGalleryExtensions is enabled
+		const blockNonGallery = this.configurationService.getValue<boolean>(BlockNonGalleryExtensionsConfigKey);
+		console.log('+++++++ blockNonGallery ', blockNonGallery);
+		const hasPolicy = this.configurationService.inspect(AllowedExtensionsConfigKey).policy !== undefined;
+		if (hasPolicy && blockNonGallery) {
+			console.log('+++++++ hasPolicy && blockNonGallery ', hasPolicy);
+			console.error('+++++++ BLOCK ', extension.displayName);
+			return new MarkdownString(nls.localize('non-gallery extension not allowed', "This extension cannot be installed because only extensions from the gallery are allowed. Please install this extension from the Extensions marketplace."));
+		} else {
+			console.log('+++++++ NOT hasPolicy && blockNonGallery ', hasPolicy);
+			console.error('+++++++ NOT BLOCK ', extension.displayName);
 		}
 
 		if (extension.resourceExtension && await this.extensionManagementService.canInstall(extension.resourceExtension) === true) {
@@ -2564,9 +2595,25 @@ export class ExtensionsWorkbenchService extends Disposable implements IExtension
 				}
 			}
 			if (installable instanceof URI) {
+				this.logService.info('!!!!!!!!! installable instanceof URI  = CMD', installable);
+				// Block VSIX installations if the policy is configured and blockNonGalleryExtensions is enabled
+				const blockNonGallery = this.configurationService.getValue<boolean>(BlockNonGalleryExtensionsConfigKey);
+				const hasPolicy = this.configurationService.inspect(AllowedExtensionsConfigKey).policy !== undefined;
+				if (hasPolicy && blockNonGallery) {
+					this.logService.error('!!! installable instanceof URI !!! BLOCK ');
+					throw new Error(nls.localize('vsix not allowed', "VSIX files cannot be installed because only extensions from the gallery are allowed. Please install this extension from the Extensions marketplace."));
+				}
+				this.logService.error('!!! installable instanceof URI !!!NOT BLOCK ');
 				extension = await this.doInstall(undefined, () => this.installFromVSIX(installable, installOptions), progressLocation);
 			} else if (extension) {
+				this.logService.info('!!!!!!!!! installable NOT instanceof URI === resourceExtension??? ');
 				if (extension.resourceExtension) {
+					// Block resource extension installations if the policy is configured and blockNonGalleryExtensions is enabled
+					const blockNonGallery = this.configurationService.getValue<boolean>(BlockNonGalleryExtensionsConfigKey);
+					const hasPolicy = this.configurationService.inspect(AllowedExtensionsConfigKey).policy !== undefined;
+					if (hasPolicy && blockNonGallery) {
+						throw new Error(nls.localize('resource extension not allowed', "Resource extensions cannot be installed because only extensions from the gallery are allowed. Please install this extension from the Extensions marketplace."));
+					}
 					extension = await this.doInstall(extension, () => this.extensionManagementService.installResourceExtension(installable as IResourceExtension, installOptions), progressLocation);
 				} else {
 					extension = await this.doInstall(extension, () => this.installFromGallery(extension!, installable as IGalleryExtension, installOptions, servers), progressLocation);

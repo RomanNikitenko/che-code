@@ -13,6 +13,7 @@ import { IMarkdownString, MarkdownString } from '../../../base/common/htmlConten
 import { IConfigurationService } from '../../configuration/common/configuration.js';
 import { isBoolean, isObject, isUndefined } from '../../../base/common/types.js';
 import { Emitter } from '../../../base/common/event.js';
+import { env } from '../../../base/common/process.js';
 
 function isGalleryExtension(extension: any): extension is IGalleryExtension {
 	return extension.type === 'gallery';
@@ -66,6 +67,31 @@ export class AllowedExtensionsService extends Disposable implements IAllowedExte
 	}
 
 	isAllowed(extension: IGalleryExtension | IExtension | { id: string; publisherDisplayName: string | undefined; version?: string; prerelease?: boolean; targetPlatform?: TargetPlatform }): true | IMarkdownString {
+		// First check DEFAULT_EXTENSIONS environment variable (if set)
+		// This allows server-side configuration via environment variable.
+		// If an extension is in DEFAULT_EXTENSIONS, it's automatically allowed.
+		const defaultExtensionsEnv = env['DEFAULT_EXTENSIONS'];
+		console.log('!!!!!!!!!!!! isAllowed ', defaultExtensionsEnv);
+		// if (defaultExtensionsEnv) {
+		// 	const defaultExtensions = defaultExtensionsEnv.split(';').filter(value => value.trim());
+		// 	let extensionId: string;
+			
+		// 	if (isGalleryExtension(extension)) {
+		// 		extensionId = extension.identifier.id.toLowerCase();
+		// 	} else if (isIExtension(extension)) {
+		// 		extensionId = extension.identifier.id.toLowerCase();
+		// 	} else {
+		// 		extensionId = extension.id.toLowerCase();
+		// 	}
+			
+		// 	// If extension is in DEFAULT_EXTENSIONS, allow it (bypass other checks)
+		// 	if (defaultExtensions.some(ext => ext.trim().toLowerCase() === extensionId)) {
+		// 		return true;
+		// 	}
+		// 	// If DEFAULT_EXTENSIONS is set but extension is not in it, continue with normal config check
+		// }
+
+		// Then check configuration/policy-based allowed extensions
 		if (!this._allowedExtensionsConfigValue) {
 			return true;
 		}
