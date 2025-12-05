@@ -13,7 +13,6 @@ import { IMarkdownString, MarkdownString } from '../../../base/common/htmlConten
 import { IConfigurationService } from '../../configuration/common/configuration.js';
 import { isBoolean, isObject, isUndefined } from '../../../base/common/types.js';
 import { Emitter } from '../../../base/common/event.js';
-import { env } from '../../../base/common/process.js';
 
 function isGalleryExtension(extension: any): extension is IGalleryExtension {
 	return extension.type === 'gallery';
@@ -70,7 +69,8 @@ export class AllowedExtensionsService extends Disposable implements IAllowedExte
 		// First check DEFAULT_EXTENSIONS environment variable (if set)
 		// This allows server-side configuration via environment variable.
 		// If an extension is in DEFAULT_EXTENSIONS, it's automatically allowed.
-		const defaultExtensionsEnv = env['DEFAULT_EXTENSIONS'];
+		// Use process.env directly for server-side access (where this service runs)
+		const defaultExtensionsEnv = typeof process !== 'undefined' && process.env ? process.env['DEFAULT_EXTENSIONS'] : undefined;
 		console.log('!!!!!!!!!!!! isAllowed ', defaultExtensionsEnv);
 		// if (defaultExtensionsEnv) {
 		// 	const defaultExtensions = defaultExtensionsEnv.split(';').filter(value => value.trim());
