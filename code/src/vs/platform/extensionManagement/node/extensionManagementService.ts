@@ -158,6 +158,8 @@ export class ExtensionManagementService extends AbstractExtensionManagementServi
 		this.logService.trace('ExtensionManagementService#install', vsix.toString());
 		this.logService.info('+++++ ExtensionManagementService#install = ILC ', vsix.path);
 
+		const isDefaultExtension = options.isDefault === true;
+
 		const { location, cleanup } = await this.downloadVsix(vsix);
 
 		try {
@@ -168,19 +170,29 @@ export class ExtensionManagementService extends AbstractExtensionManagementServi
 			}
 
 			// Block VSIX installations if the policy is configured and blockNonGalleryExtensions is enabled
-			const blockNonGallery = this.configurationService.getValue<boolean>(BlockNonGalleryExtensionsConfigKey);
-			this.logService.info('+++++ ExtensionManagementService +++ blockNonGallery ', blockNonGallery);
-			const hasPolicy = this.configurationService.inspect(AllowedExtensionsConfigKey).policy !== undefined;
-			if (hasPolicy && blockNonGallery) {
-				this.logService.info('+++++ ExtensionManagementService +++ hasPolicy ', hasPolicy);
-				throw new Error(nls.localize('vsix not allowed', "VSIX files cannot be installed because only extensions from the gallery are allowed. Please install this extension from the Extensions marketplace."));
+			// Skip this check for default extensions (from DEFAULT_EXTENSIONS)
+			if (!isDefaultExtension) {
+				const blockNonGallery = this.configurationService.getValue<boolean>(BlockNonGalleryExtensionsConfigKey);
+				this.logService.info('+++++ ExtensionManagementService +++ blockNonGallery ', blockNonGallery);
+				const hasPolicy = this.configurationService.inspect(AllowedExtensionsConfigKey).policy !== undefined;
+				if (hasPolicy && blockNonGallery) {
+					this.logService.info('+++++ ExtensionManagementService +++ hasPolicy ', hasPolicy);
+					throw new Error(nls.localize('vsix not allowed', "VSIX files cannot be installed because only extensions from the gallery are allowed. Please install this extension from the Extensions marketplace."));
+				} else {
+					this.logService.info('+++++ ExtensionManagementService +++ NOT hasPolicy ', hasPolicy);
+				}
 			} else {
-				this.logService.info('+++++ ExtensionManagementService +++ NOT hasPolicy ', hasPolicy);
+				this.logService.info('!!!!!!!! ExtensionManagementService#install - skipping blockNonGallery check for default extension');
 			}
 
-			const allowedToInstall = this.allowedExtensionsService.isAllowed({ id: extensionId, version: manifest.version, publisherDisplayName: undefined });
-			if (allowedToInstall !== true) {
-				throw new Error(nls.localize('notAllowed', "This extension cannot be installed because {0}", allowedToInstall.value));
+			// Skip allowedExtensionsService check for default extensions (from DEFAULT_EXTENSIONS)
+			if (!isDefaultExtension) {
+				const allowedToInstall = this.allowedExtensionsService.isAllowed({ id: extensionId, version: manifest.version, publisherDisplayName: undefined });
+				if (allowedToInstall !== true) {
+					throw new Error(nls.localize('notAllowed', "This extension cannot be installed because {0}", allowedToInstall.value));
+				}
+			} else {
+				this.logService.info('!!!!!!!! ExtensionManagementService#install - skipping allowedExtensionsService check for default extension');
 			}
 
 			const results = await this.installExtensions([{ manifest, extension: location, options }]);

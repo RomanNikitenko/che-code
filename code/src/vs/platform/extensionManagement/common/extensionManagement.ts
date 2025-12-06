@@ -576,6 +576,10 @@ export type InstallOptions = {
 	keepExisting?: boolean;
 	downloadExtensionsLocally?: boolean;
 	/**
+	 * Indicates that this extension is from DEFAULT_EXTENSIONS and should bypass policy checks
+	 */
+	isDefault?: boolean;
+	/**
 	 * Context passed through to InstallExtensionResult
 	 */
 	context?: IStringDictionary<any>;

@@ -57,6 +57,7 @@ import { IServerTelemetryService, ServerNullTelemetryService, ServerTelemetrySer
 import { RemoteTerminalChannel } from './remoteTerminalChannel.js';
 import { createURITransformer } from '../../workbench/api/node/uriTransformer.js';
 import { ServerConnectionToken } from './serverConnectionToken.js';
+import { DefaultExtensionsInstaller } from './che/defaultExtensionsInstaller.js';
 import { ServerEnvironmentService, ServerParsedArgs } from './serverEnvironmentService.js';
 import { REMOTE_TERMINAL_CHANNEL_NAME } from '../../workbench/contrib/terminal/common/remote/remoteTerminalChannel.js';
 import { REMOTE_FILE_SYSTEM_CHANNEL_NAME } from '../../workbench/services/remote/common/remoteFileSystemProviderClient.js';
@@ -274,6 +275,9 @@ export async function setupServerServices(connectionToken: ServerConnectionToken
 
 		// clean up extensions folder
 		remoteExtensionsScanner.whenExtensionsReady().then(() => extensionManagementService.cleanUp());
+
+		// Install default extensions from DEFAULT_EXTENSIONS environment variable
+		disposables.add(new DefaultExtensionsInstaller(extensionManagementService, logService, fileService, userDataProfilesService));
 
 		disposables.add(new ErrorTelemetry(accessor.get(ITelemetryService)));
 
