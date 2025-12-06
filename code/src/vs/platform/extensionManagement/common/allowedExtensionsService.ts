@@ -31,16 +31,6 @@ export class AllowedExtensionsService extends Disposable implements IAllowedExte
 
 	private readonly publisherOrgs: string[];
 
-	private _defaultExtensionsEnv: string | undefined;
-	
-	/**
-	 * Set the DEFAULT_EXTENSIONS value from environment service.
-	 * This can be called from the workbench layer to inject the value.
-	 */
-	setDefaultExtensionsEnv(value: string | undefined): void {
-		this._defaultExtensionsEnv = value;
-	}
-
 	private _allowedExtensionsConfigValue: AllowedExtensionsConfigValueType | undefined;
 	get allowedExtensionsConfigValue(): AllowedExtensionsConfigValueType | undefined {
 		return this._allowedExtensionsConfigValue;
@@ -75,55 +65,7 @@ export class AllowedExtensionsService extends Disposable implements IAllowedExte
 		return Object.fromEntries(entries);
 	}
 
-	private getDefaultExtensionsEnv(): string | undefined {
-		// First check if it was set via setter (workbench context)
-		if (this._defaultExtensionsEnv !== undefined) {
-			console.log('!!!!!!!! AllowedExtensionsService.getDefaultExtensionsEnv - from setter:', this._defaultExtensionsEnv);
-			return this._defaultExtensionsEnv;
-		}
-		
-		// Try process.env (server/Node.js context)
-		if (typeof process !== 'undefined' && process.env) {
-			const envValue = process.env['DEFAULT_EXTENSIONS'];
-			console.log('!!!!!!!! AllowedExtensionsService.getDefaultExtensionsEnv - from process.env:', envValue);
-			console.log('!!!!!!!! AllowedExtensionsService.getDefaultExtensionsEnv - typeof process:', typeof process);
-			console.log('!!!!!!!! AllowedExtensionsService.getDefaultExtensionsEnv - process.env exists:', !!process.env);
-			if (envValue) {
-				return envValue;
-			}
-		} else {
-			console.log('!!!!!!!! AllowedExtensionsService.getDefaultExtensionsEnv - process not available');
-		}
-		
-		return undefined;
-	}
-
 	isAllowed(extension: IGalleryExtension | IExtension | { id: string; publisherDisplayName: string | undefined; version?: string; prerelease?: boolean; targetPlatform?: TargetPlatform }): true | IMarkdownString {
-		// First check DEFAULT_EXTENSIONS environment variable (if set)
-		// This allows server-side configuration via environment variable.
-		// If an extension is in DEFAULT_EXTENSIONS, it's automatically allowed.
-		const defaultExtensionsEnv = this.getDefaultExtensionsEnv();
-		console.log('!!!!!!!!!!!! isAllowed ', defaultExtensionsEnv);
-		
-		if (defaultExtensionsEnv) {
-			const defaultExtensions = defaultExtensionsEnv.split(';').filter(value => value.trim());
-			let extensionId: string;
-			
-			if (isGalleryExtension(extension)) {
-				extensionId = extension.identifier.id.toLowerCase();
-			} else if (isIExtension(extension)) {
-				extensionId = extension.identifier.id.toLowerCase();
-			} else {
-				extensionId = extension.id.toLowerCase();
-			}
-			
-			// If extension is in DEFAULT_EXTENSIONS, allow it (bypass other checks)
-			if (defaultExtensions.some(ext => ext.trim().toLowerCase() === extensionId)) {
-				return true;
-			}
-			// If DEFAULT_EXTENSIONS is set but extension is not in it, continue with normal config check
-		}
-
 		// Then check configuration/policy-based allowed extensions
 		if (!this._allowedExtensionsConfigValue) {
 			return true;

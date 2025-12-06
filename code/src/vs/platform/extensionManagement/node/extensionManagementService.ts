@@ -101,12 +101,8 @@ export class ExtensionManagementService extends AbstractExtensionManagementServi
 		
 		// Check if DEFAULT_EXTENSIONS environment variable is accessible
 		const defaultExtensionsEnv = typeof process !== 'undefined' && process.env ? process.env['DEFAULT_EXTENSIONS'] : undefined;
-		logService.info('!!!!!!!! ExtensionManagementService constructor - typeof process:', typeof process);
-		logService.info('!!!!!!!! ExtensionManagementService constructor - process.env exists:', typeof process !== 'undefined' && !!process.env);
 		logService.info('!!!!!!!! ExtensionManagementService constructor - DEFAULT_EXTENSIONS value:', defaultExtensionsEnv);
-		if (typeof process !== 'undefined' && process.env) {
-			logService.info('!!!!!!!! ExtensionManagementService constructor - process.env keys sample:', Object.keys(process.env).slice(0, 10).join(', '));
-		}
+		console.log('!!!!!!!! ExtensionManagementService constructor - DEFAULT_EXTENSIONS value:', defaultExtensionsEnv);
 		const extensionLifecycle = this._register(instantiationService.createInstance(ExtensionsLifecycle));
 		this.extensionsScanner = this._register(instantiationService.createInstance(ExtensionsScanner, extension => extensionLifecycle.postUninstall(extension)));
 		this.manifestCache = this._register(new ExtensionsManifestCache(userDataProfilesService, fileService, uriIdentityService, this, this.logService));

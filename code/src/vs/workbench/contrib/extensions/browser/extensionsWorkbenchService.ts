@@ -2407,9 +2407,7 @@ export class ExtensionsWorkbenchService extends Disposable implements IExtension
 		}
 
 		if (extension.gallery) {
-			console.log('+++++++ extension.gallery ');
-			console.log('+++ ', extension.gallery);
-			console.log('+++ ', extension.displayName);
+			console.log('++++++++++++ extension.gallery ', extension.gallery.identifier.id);
 			// Check if extension is allowed first (before checking platform compatibility or signing)
 			const allowedResult = this.allowedExtensionsService.isAllowed({ id: extension.gallery.identifier.id, publisherDisplayName: extension.gallery.publisherDisplayName });
 			if (allowedResult !== true) {
@@ -2595,12 +2593,12 @@ export class ExtensionsWorkbenchService extends Disposable implements IExtension
 				}
 			}
 			if (installable instanceof URI) {
-				this.logService.info('!!!!!!!!! installable instanceof URI  = CMD', installable);
+				this.logService.info('!!!!!!!!!!!!!!!!! installable instanceof URI  = CMD', installable.path);
 				// Block VSIX installations if the policy is configured and blockNonGalleryExtensions is enabled
 				const blockNonGallery = this.configurationService.getValue<boolean>(BlockNonGalleryExtensionsConfigKey);
 				const hasPolicy = this.configurationService.inspect(AllowedExtensionsConfigKey).policy !== undefined;
 				if (hasPolicy && blockNonGallery) {
-					this.logService.error('!!! installable instanceof URI !!! BLOCK ');
+					this.logService.error('!!! installable instanceof URI !!! BLOCK ', installable.path);
 					throw new Error(nls.localize('vsix not allowed', "VSIX files cannot be installed because only extensions from the gallery are allowed. Please install this extension from the Extensions marketplace."));
 				}
 				this.logService.error('!!! installable instanceof URI !!!NOT BLOCK ');

@@ -35,20 +35,21 @@ export class DefaultExtensionsInstaller extends Disposable {
 	private async initialize(): Promise<void> {
 		const defaultExtensionsEnv = typeof process !== 'undefined' && process.env ? process.env['DEFAULT_EXTENSIONS'] : undefined;
 		if (!defaultExtensionsEnv) {
-			this.logService.debug('DefaultExtensionsInstaller: DEFAULT_EXTENSIONS not set, skipping installation');
+			this.logService.info('DefaultExtensionsInstaller: DEFAULT_EXTENSIONS not set, skipping installation');
 			return;
 		}
 
 		const extensionPaths = defaultExtensionsEnv.split(';').filter(p => p.trim());
 		if (extensionPaths.length === 0) {
-			this.logService.debug('DefaultExtensionsInstaller: No extensions to install');
+			this.logService.info('DefaultExtensionsInstaller: No extensions to install');
 			return;
 		}
 
-		this.logService.info(`DefaultExtensionsInstaller: Found ${extensionPaths.length} default extension(s) in DEFAULT_EXTENSIONS`);
+		this.logService.info(`!!!!!!!! DefaultExtensionsInstaller: Found ${extensionPaths.length} default extension(s) in DEFAULT_EXTENSIONS`);
 
 		// Track installed extensions in a file to avoid reinstalling
 		const storageFile = this.getStorageFile();
+		this.logService.info(`!!!!!!!! DefaultExtensionsInstaller: storageFile ${storageFile}`);
 		let installedPaths: string[] = [];
 		try {
 			const content = await this.fileService.readFile(storageFile);
@@ -86,7 +87,6 @@ export class DefaultExtensionsInstaller extends Disposable {
 				this.logService.info(`DefaultExtensionsInstaller: Installing extension from ${trimmedPath}`);
 
 				await this.extensionManagementService.install(vsixUri, { 
-					donotIncludePackAndDependencies: true,
 					isDefault: true // Mark as default extension to bypass policy checks
 				});
 				successfullyInstalled.push(trimmedPath);
