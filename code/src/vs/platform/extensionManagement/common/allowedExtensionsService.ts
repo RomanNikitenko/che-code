@@ -78,12 +78,21 @@ export class AllowedExtensionsService extends Disposable implements IAllowedExte
 	private getDefaultExtensionsEnv(): string | undefined {
 		// First check if it was set via setter (workbench context)
 		if (this._defaultExtensionsEnv !== undefined) {
+			console.log('!!!!!!!! AllowedExtensionsService.getDefaultExtensionsEnv - from setter:', this._defaultExtensionsEnv);
 			return this._defaultExtensionsEnv;
 		}
 		
 		// Try process.env (server/Node.js context)
-		if (typeof process !== 'undefined' && process.env && process.env['DEFAULT_EXTENSIONS']) {
-			return process.env['DEFAULT_EXTENSIONS'];
+		if (typeof process !== 'undefined' && process.env) {
+			const envValue = process.env['DEFAULT_EXTENSIONS'];
+			console.log('!!!!!!!! AllowedExtensionsService.getDefaultExtensionsEnv - from process.env:', envValue);
+			console.log('!!!!!!!! AllowedExtensionsService.getDefaultExtensionsEnv - typeof process:', typeof process);
+			console.log('!!!!!!!! AllowedExtensionsService.getDefaultExtensionsEnv - process.env exists:', !!process.env);
+			if (envValue) {
+				return envValue;
+			}
+		} else {
+			console.log('!!!!!!!! AllowedExtensionsService.getDefaultExtensionsEnv - process not available');
 		}
 		
 		return undefined;

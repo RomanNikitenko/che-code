@@ -266,6 +266,26 @@ export class BrowserWorkbenchEnvironmentService implements IBrowserWorkbenchEnvi
 	@memoize
 	get editSessionId(): string | undefined { return this.options.editSessionId; }
 
+	@memoize
+	get defaultExtensions(): string | undefined {
+		// First check payload (if passed via workspace provider)
+		if (this.payload?.has('defaultExtensions')) {
+			const value = this.payload.get('defaultExtensions');
+			console.log('!!!!!!!! BrowserWorkbenchEnvironmentService.defaultExtensions from payload:', value);
+			return value;
+		}
+		// Fallback to process.env (for Che Code and other environments)
+		// Note: In web environments, env may be empty, so this will return undefined
+		const envValue = env['DEFAULT_EXTENSIONS'];
+		console.log('!!!!!!!! BrowserWorkbenchEnvironmentService.defaultExtensions from env:', envValue);
+		console.log('!!!!!!!! BrowserWorkbenchEnvironmentService.defaultExtensions - env object:', env);
+		console.log('!!!!!!!! BrowserWorkbenchEnvironmentService.defaultExtensions - typeof process:', typeof process);
+		if (typeof process !== 'undefined' && process.env) {
+			console.log('!!!!!!!! BrowserWorkbenchEnvironmentService.defaultExtensions - process.env.DEFAULT_EXTENSIONS:', process.env['DEFAULT_EXTENSIONS']);
+		}
+		return envValue;
+	}
+
 	private payload: Map<string, string> | undefined;
 
 	constructor(

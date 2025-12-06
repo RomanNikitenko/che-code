@@ -2024,8 +2024,13 @@ class DefaultExtensionsInitializer implements IWorkbenchContribution {
 	) {
 		// Initialize AllowedExtensionsService with DEFAULT_EXTENSIONS from environment service
 		// This allows the service to validate extensions against the environment variable
-		if (environmentService.defaultExtensions) {
-			(allowedExtensionsService as any).setDefaultExtensionsEnv(environmentService.defaultExtensions);
+		const defaultExtensions = environmentService.defaultExtensions;
+		console.log('!!!!!!!! DefaultExtensionsInitializer - defaultExtensions from env service:', defaultExtensions);
+		if (defaultExtensions) {
+			(allowedExtensionsService as any).setDefaultExtensionsEnv(defaultExtensions);
+			console.log('!!!!!!!! DefaultExtensionsInitializer - set on allowedExtensionsService');
+		} else {
+			console.log('!!!!!!!! DefaultExtensionsInitializer - defaultExtensions is undefined');
 		}
 	}
 }
