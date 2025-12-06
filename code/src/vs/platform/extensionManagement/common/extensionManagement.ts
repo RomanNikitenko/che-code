@@ -576,6 +576,10 @@ export type InstallOptions = {
 	keepExisting?: boolean;
 	downloadExtensionsLocally?: boolean;
 	/**
+	 * Indicates that this extension is from DEFAULT_EXTENSIONS and should bypass policy checks
+	 */
+	isDefault?: boolean;
+	/**
 	 * Context passed through to InstallExtensionResult
 	 */
 	context?: IStringDictionary<any>;
@@ -709,6 +713,7 @@ export async function computeSize(location: URI, fileService: IFileService): Pro
 export const ExtensionsLocalizedLabel = localize2('extensions', "Extensions");
 export const PreferencesLocalizedLabel = localize2('preferences', 'Preferences');
 export const AllowedExtensionsConfigKey = 'extensions.allowed';
+export const BlockNonGalleryExtensionsConfigKey = 'extensions.blockNonGalleryExtensions';
 export const VerifyExtensionSignatureConfigKey = 'extensions.verifySignature';
 
 Registry.as<IConfigurationRegistry>(Extensions.Configuration)
@@ -781,6 +786,17 @@ Registry.as<IConfigurationRegistry>(Extensions.Configuration)
 						],
 					}
 				}
+			},
+			[BlockNonGalleryExtensionsConfigKey]: {
+				type: 'boolean',
+				markdownDescription: localize('extensions.blockNonGalleryExtensions', "When enabled and the allowed extensions policy is configured, blocks installation of non-gallery extensions (VSIX files and resource extensions). Only extensions from the gallery can be installed."),
+				default: false,
+				scope: ConfigurationScope.APPLICATION,
+				policy: {
+					name: 'BlockNonGalleryExtensions',
+					minimumVersion: '1.96',
+					description: localize('extensions.blockNonGalleryExtensions.policy', "When enabled and the allowed extensions policy is configured, blocks installation of non-gallery extensions (VSIX files and resource extensions). Only extensions from the gallery can be installed."),
+				},
 			}
 		}
 	});

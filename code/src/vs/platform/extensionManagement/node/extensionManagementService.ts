@@ -34,6 +34,8 @@ import {
 	ExtensionSignatureVerificationCode,
 	computeSize,
 	IAllowedExtensionsService,
+	AllowedExtensionsConfigKey,
+	BlockNonGalleryExtensionsConfigKey,
 	VerifyExtensionSignatureConfigKey,
 	shouldRequireRepositorySignatureFor,
 } from '../common/extensionManagement.js';
@@ -96,6 +98,11 @@ export class ExtensionManagementService extends AbstractExtensionManagementServi
 		@IUserDataProfilesService userDataProfilesService: IUserDataProfilesService
 	) {
 		super(galleryService, telemetryService, uriIdentityService, logService, productService, allowedExtensionsService, userDataProfilesService);
+		
+		// Check if DEFAULT_EXTENSIONS environment variable is accessible
+		const defaultExtensionsEnv = typeof process !== 'undefined' && process.env ? process.env['DEFAULT_EXTENSIONS'] : undefined;
+		logService.info('!!!!!!!! ExtensionManagementService constructor - DEFAULT_EXTENSIONS value:', defaultExtensionsEnv);
+		console.log('!!!!!!!! ExtensionManagementService constructor - DEFAULT_EXTENSIONS value:', defaultExtensionsEnv);
 		const extensionLifecycle = this._register(instantiationService.createInstance(ExtensionsLifecycle));
 		this.extensionsScanner = this._register(instantiationService.createInstance(ExtensionsScanner, extension => extensionLifecycle.postUninstall(extension)));
 		this.manifestCache = this._register(new ExtensionsManifestCache(userDataProfilesService, fileService, uriIdentityService, this, this.logService));
@@ -145,6 +152,9 @@ export class ExtensionManagementService extends AbstractExtensionManagementServi
 
 	async install(vsix: URI, options: InstallOptions = {}): Promise<ILocalExtension> {
 		this.logService.trace('ExtensionManagementService#install', vsix.toString());
+		this.logService.info('+++++ ExtensionManagementService#install = ILC ', vsix.path);
+
+		const isDefaultExtension = options.isDefault === true;
 
 		const { location, cleanup } = await this.downloadVsix(vsix);
 
@@ -155,9 +165,30 @@ export class ExtensionManagementService extends AbstractExtensionManagementServi
 				throw new Error(nls.localize('incompatible', "Unable to install extension '{0}' as it is not compatible with VS Code '{1}'.", extensionId, this.productService.version));
 			}
 
-			const allowedToInstall = this.allowedExtensionsService.isAllowed({ id: extensionId, version: manifest.version, publisherDisplayName: undefined });
-			if (allowedToInstall !== true) {
-				throw new Error(nls.localize('notAllowed', "This extension cannot be installed because {0}", allowedToInstall.value));
+			// Block VSIX installations if the policy is configured and blockNonGalleryExtensions is enabled
+			// Skip this check for default extensions (from DEFAULT_EXTENSIONS)
+			if (!isDefaultExtension) {
+				const blockNonGallery = this.configurationService.getValue<boolean>(BlockNonGalleryExtensionsConfigKey);
+				this.logService.info('+++++ ExtensionManagementService +++ blockNonGallery ', blockNonGallery);
+				const hasPolicy = this.configurationService.inspect(AllowedExtensionsConfigKey).policy !== undefined;
+				if (hasPolicy && blockNonGallery) {
+					this.logService.info('+++++ ExtensionManagementService +++ hasPolicy ', hasPolicy);
+					throw new Error(nls.localize('vsix not allowed', "VSIX files cannot be installed because only extensions from the gallery are allowed. Please install this extension from the Extensions marketplace."));
+				} else {
+					this.logService.info('+++++ ExtensionManagementService +++ NOT hasPolicy ', hasPolicy);
+				}
+			} else {
+				this.logService.info('!!!!!!!! ExtensionManagementService#install - skipping blockNonGallery check for default extension');
+			}
+
+			// Skip allowedExtensionsService check for default extensions (from DEFAULT_EXTENSIONS)
+			if (!isDefaultExtension) {
+				const allowedToInstall = this.allowedExtensionsService.isAllowed({ id: extensionId, version: manifest.version, publisherDisplayName: undefined });
+				if (allowedToInstall !== true) {
+					throw new Error(nls.localize('notAllowed', "This extension cannot be installed because {0}", allowedToInstall.value));
+				}
+			} else {
+				this.logService.info('!!!!!!!! ExtensionManagementService#install - skipping allowedExtensionsService check for default extension');
 			}
 
 			const results = await this.installExtensions([{ manifest, extension: location, options }]);

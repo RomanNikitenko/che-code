@@ -66,6 +66,7 @@ export class AllowedExtensionsService extends Disposable implements IAllowedExte
 	}
 
 	isAllowed(extension: IGalleryExtension | IExtension | { id: string; publisherDisplayName: string | undefined; version?: string; prerelease?: boolean; targetPlatform?: TargetPlatform }): true | IMarkdownString {
+		// Then check configuration/policy-based allowed extensions
 		if (!this._allowedExtensionsConfigValue) {
 			return true;
 		}
