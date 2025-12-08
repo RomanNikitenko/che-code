@@ -63,7 +63,7 @@
   },
   "devDependencies": {
     "@types/node": "22.x",
-    "@types/node-fetch": "^2.5.7",
+    "@types/node-fetch": "^2.6.13",
     "@types/uuid": "8.0.0",
     "webpack-node-externals": "^3.0.0"
   },
