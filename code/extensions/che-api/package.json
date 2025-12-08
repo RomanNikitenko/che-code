@@ -30,7 +30,7 @@
     "license:generate": "podman run --rm -t -v $PWD:/workspace/project quay.io/che-incubator/dash-licenses:next"
   },
   "dependencies": {
-    "@devfile/api": "^2.3.0-1738854228",
+    "@devfile/api": "^2.3.0-1757407014",
     "axios": "^1.13.1",
     "@kubernetes/client-node": "^0.22.0",
     "fs-extra": "^11.2.0",
