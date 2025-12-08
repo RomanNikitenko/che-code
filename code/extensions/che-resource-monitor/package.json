@@ -33,7 +33,7 @@
   "dependencies": {
     "@devfile/api": "^2.3.0-1738854228",
     "@kubernetes/client-node": "^0.22.0",
-    "inversify": "^6.0.2",
+    "inversify": "^7.10.4",
     "reflect-metadata": "^0.2.2",
     "request": "2.88.2"
   },
