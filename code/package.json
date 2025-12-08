@@ -224,7 +224,7 @@
     "yaserver": "^0.4.0",
     "@types/ws": "8.2.0",
     "@types/js-yaml": "^4.0.5",
-    "zx": "^8.7.0"
+    "zx": "^8.8.5"
   },
   "overrides": {
     "node-gyp-build": "4.8.1",
