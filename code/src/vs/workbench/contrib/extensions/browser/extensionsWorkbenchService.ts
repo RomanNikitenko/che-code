@@ -21,6 +21,7 @@ import {
 	TargetPlatformToString,
 	IAllowedExtensionsService,
 	AllowedExtensionsConfigKey,
+	BlockInstallFromVSIXCommandExtensionsInstallationConfigKey,
 	EXTENSION_INSTALL_SKIP_PUBLISHER_TRUST_CONTEXT,
 	ExtensionManagementError,
 	ExtensionManagementErrorCode,
@@ -2570,6 +2571,12 @@ export class ExtensionsWorkbenchService extends Disposable implements IExtension
 				}
 			}
 			if (installable instanceof URI) {
+				const blockInstallFromVSIXCommand = this.configurationService.getValue<boolean>(BlockInstallFromVSIXCommandExtensionsInstallationConfigKey);
+				this.logService.info('ExtensionsWorkbenchService: BlockInstallFromVSIXCommandExtensionsInstallation ', blockInstallFromVSIXCommand);
+				if (blockInstallFromVSIXCommand) {
+					this.logService.info('ExtensionsWorkbenchService: Installation from VSIX files has been blocked by an administrator.');
+					throw new Error(nls.localize('installFromVSIX command blocked', "Installation from VSIX files has been blocked by an administrator."));
+				}
 				extension = await this.doInstall(undefined, () => this.installFromVSIX(installable, installOptions), progressLocation);
 			} else if (extension) {
 				if (extension.resourceExtension) {

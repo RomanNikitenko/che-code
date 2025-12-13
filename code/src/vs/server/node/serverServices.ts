@@ -57,6 +57,7 @@ import { IServerTelemetryService, ServerNullTelemetryService, ServerTelemetrySer
 import { RemoteTerminalChannel } from './remoteTerminalChannel.js';
 import { createURITransformer } from '../../workbench/api/node/uriTransformer.js';
 import { ServerConnectionToken } from './serverConnectionToken.js';
+import { DefaultExtensionsInstaller } from './che/defaultExtensionsInstaller.js';
 import { ServerEnvironmentService, ServerParsedArgs } from './serverEnvironmentService.js';
 import { REMOTE_TERMINAL_CHANNEL_NAME } from '../../workbench/contrib/terminal/common/remote/remoteTerminalChannel.js';
 import { REMOTE_FILE_SYSTEM_CHANNEL_NAME } from '../../workbench/services/remote/common/remoteFileSystemProviderClient.js';
@@ -236,6 +237,7 @@ export async function setupServerServices(connectionToken: ServerConnectionToken
 		const extensionManagementService = accessor.get(INativeServerExtensionManagementService);
 		const extensionsScannerService = accessor.get(IExtensionsScannerService);
 		const extensionGalleryService = accessor.get(IExtensionGalleryService);
+		const extensionGalleryManifestService = accessor.get(IExtensionGalleryManifestService);
 		const languagePackService = accessor.get(ILanguagePackService);
 		const remoteExtensionEnvironmentChannel = new RemoteAgentEnvironmentChannel(connectionToken, environmentService, userDataProfilesService, extensionHostStatusService);
 		socketServer.registerChannel('remoteextensionsenvironment', remoteExtensionEnvironmentChannel);
@@ -263,6 +265,10 @@ export async function setupServerServices(connectionToken: ServerConnectionToken
 
 		// clean up extensions folder
 		remoteExtensionsScanner.whenExtensionsReady().then(() => extensionManagementService.cleanUp());
+
+		// Install default extensions from DEFAULT_EXTENSIONS_NEW environment variable
+		// The installer will wait for extensions to be ready and gallery service to be enabled internally
+		disposables.add(new DefaultExtensionsInstaller(extensionManagementService, logService, fileService, userDataProfilesService, extensionGalleryService, extensionGalleryManifestService, remoteExtensionsScanner));
 
 		disposables.add(new ErrorTelemetry(accessor.get(ITelemetryService)));
 

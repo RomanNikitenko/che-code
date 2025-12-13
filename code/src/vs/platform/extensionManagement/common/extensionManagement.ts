@@ -575,6 +575,8 @@ export type InstallOptions = {
 	productVersion?: IProductVersion;
 	keepExisting?: boolean;
 	downloadExtensionsLocally?: boolean;
+	// Indicates that this extension is from DEFAULT_EXTENSIONS env variable
+	isDefault?: boolean;
 	/**
 	 * Context passed through to InstallExtensionResult
 	 */
@@ -709,6 +711,9 @@ export async function computeSize(location: URI, fileService: IFileService): Pro
 export const ExtensionsLocalizedLabel = localize2('extensions', "Extensions");
 export const PreferencesLocalizedLabel = localize2('preferences', 'Preferences');
 export const AllowedExtensionsConfigKey = 'extensions.allowed';
+export const BlockDefaultExtensionsInstallationConfigKey = 'extensions.blockDefaultExtensionsInstallation';
+export const BlockCliExtensionsInstallationConfigKey = 'extensions.blockCliExtensionsInstallation';
+export const BlockInstallFromVSIXCommandExtensionsInstallationConfigKey = 'extensions.blockInstallFromVSIXCommandExtensionsInstallation';
 export const VerifyExtensionSignatureConfigKey = 'extensions.verifySignature';
 
 Registry.as<IConfigurationRegistry>(Extensions.Configuration)
@@ -781,6 +786,39 @@ Registry.as<IConfigurationRegistry>(Extensions.Configuration)
 						],
 					}
 				}
+			},
+			[BlockDefaultExtensionsInstallationConfigKey]: {
+				type: 'boolean',
+				markdownDescription: localize('extensions.blockDefaultExtensionsInstallation', "When enabled, blocks installation of default extensions (from DEFAULT_EXTENSIONS)"),
+				default: false,
+				scope: ConfigurationScope.APPLICATION,
+				policy: {
+					name: 'BlockDefaultExtensionsInstallation',
+					minimumVersion: '1.104.3',
+					description: localize('extensions.blockDefaultExtensionsInstallation.policy', "When enabled, blocks installation of default extensions (from DEFAULT_EXTENSIONS)"),
+				},
+			},
+			[BlockCliExtensionsInstallationConfigKey]: {
+				type: 'boolean',
+				markdownDescription: localize('extensions.blockCliExtensionsInstallation', "When enabled, blocks installation of extensions via CLI."),
+				default: false,
+				scope: ConfigurationScope.APPLICATION,
+				policy: {
+					name: 'BlockCliExtensionsInstallation',
+					minimumVersion: '1.104.3',
+					description: localize('extensions.blockCliExtensionsInstallation.policy', "When enabled, blocks installation of extensions via CLI."),
+				},
+			},
+			[BlockInstallFromVSIXCommandExtensionsInstallationConfigKey]: {
+				type: 'boolean',
+				markdownDescription: localize('extensions.blockInstallFromVSIXCommandExtensionsInstallation', "When enabled, blocks installation of extensions via the workbench.extensions.command.installFromVSIX command."),
+				default: false,
+				scope: ConfigurationScope.APPLICATION,
+				policy: {
+					name: 'BlockInstallFromVSIXCommandExtensionsInstallation',
+					minimumVersion: '1.104.3',
+					description: localize('extensions.blockInstallFromVSIXCommandExtensionsInstallation.policy', "When enabled, blocks installation of extensions via the workbench.extensions.command.installFromVSIX command."),
+				},
 			}
 		}
 	});
