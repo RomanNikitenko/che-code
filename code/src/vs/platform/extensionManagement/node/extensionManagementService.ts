@@ -34,6 +34,8 @@ import {
 	ExtensionSignatureVerificationCode,
 	computeSize,
 	IAllowedExtensionsService,
+	BlockDefaultExtensionsInstallationConfigKey,
+	BlockCliExtensionsInstallationConfigKey,
 	VerifyExtensionSignatureConfigKey,
 	shouldRequireRepositorySignatureFor,
 } from '../common/extensionManagement.js';
@@ -145,6 +147,7 @@ export class ExtensionManagementService extends AbstractExtensionManagementServi
 
 	async install(vsix: URI, options: InstallOptions = {}): Promise<ILocalExtension> {
 		this.logService.trace('ExtensionManagementService#install', vsix.toString());
+		const isDefaultExtension = options.isDefault === true;
 
 		const { location, cleanup } = await this.downloadVsix(vsix);
 
@@ -155,9 +158,32 @@ export class ExtensionManagementService extends AbstractExtensionManagementServi
 				throw new Error(nls.localize('incompatible', "Unable to install extension '{0}' as it is not compatible with VS Code '{1}'.", extensionId, this.productService.version));
 			}
 
-			const allowedToInstall = this.allowedExtensionsService.isAllowed({ id: extensionId, version: manifest.version, publisherDisplayName: undefined });
-			if (allowedToInstall !== true) {
-				throw new Error(nls.localize('notAllowed', "This extension cannot be installed because {0}", allowedToInstall.value));
+			// Block VSIX installations based on the installation source
+			if (isDefaultExtension) {
+				// Check for default extensions installation blocking
+				const blockDefaultExtensions = this.configurationService.getValue<boolean>(BlockDefaultExtensionsInstallationConfigKey);
+				this.logService.info('ExtensionManagementService: BlockDefaultExtensionsInstallation ', blockDefaultExtensions);
+				if (blockDefaultExtensions) {
+					this.logService.info('ExtensionManagementService: Default extension installation has been blocked by an administrator.');
+					throw new Error(nls.localize('Default extensions blocked', "Default extension installation has been blocked by an administrator."));
+				}
+			} else {
+				// Check for CLI installation blocking (non-default extensions installed via CLI)
+				const blockCliExtensions = this.configurationService.getValue<boolean>(BlockCliExtensionsInstallationConfigKey);
+				this.logService.info('ExtensionManagementService: BlockCliExtensionsInstallation ', blockCliExtensions);
+				if (blockCliExtensions) {
+					this.logService.info('ExtensionManagementService: Installation of extensions via CLI has been blocked by an administrator.');
+					throw new Error(nls.localize('CLI extensions blocked', "Installation of extensions via CLI has been blocked by an administrator."));
+				}
+			}
+
+			// Skip allowedExtensionsService check for default extensions (from DEFAULT_EXTENSIONS)
+			if (!isDefaultExtension) {
+				const allowedToInstall = this.allowedExtensionsService.isAllowed({ id: extensionId, version: manifest.version, publisherDisplayName: undefined });
+				if (allowedToInstall !== true) {
+					this.logService.info(`ExtensionManagementService: Installation of the extension ${extensionId} is not allowed: ${allowedToInstall.value}.`);
+					throw new Error(nls.localize('notAllowed', "This extension cannot be installed because {0}", allowedToInstall.value));
+				}
 			}
 
 			const results = await this.installExtensions([{ manifest, extension: location, options }]);
