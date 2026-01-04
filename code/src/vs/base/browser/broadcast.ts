@@ -8,6 +8,8 @@ import { getErrorMessage } from '../common/errors.js';
 import { Emitter } from '../common/event.js';
 import { Disposable, toDisposable } from '../common/lifecycle.js';
 
+// test
+
 export class BroadcastDataChannel<T> extends Disposable {
 
 	private broadcastChannel: BroadcastChannel | undefined;
