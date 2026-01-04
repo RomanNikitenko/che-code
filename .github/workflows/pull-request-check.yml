@@ -143,6 +143,11 @@ jobs:
     name: build-che-dev-image
     runs-on: ubuntu-22.04
     steps:
+      - name: Free up disk space
+        run: |
+          df -h
+          rm -rf /opt/hostedtoolcache
+          df -h
       - name: Checkout che-code source code
         uses: actions/checkout@v4
 
