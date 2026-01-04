@@ -11,7 +11,7 @@
 import * as fs from './fs-extra.js';
 import { env } from 'process';
 import { FlattenedDevfile, Project } from './flattened-devfile.js';
-
+//test
 export interface Workspace {
   folders: Folder[];
   settings?: KeyValue;
