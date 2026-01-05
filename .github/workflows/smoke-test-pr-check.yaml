@@ -85,6 +85,10 @@ jobs:
       - name: Disk free
         run: |
           df -h
+      - name: Free up disk space
+        run: |
+          rm -rf /opt/hostedtoolcache
+          df -h
 
       - name: Start minikube
         id: run-minikube
