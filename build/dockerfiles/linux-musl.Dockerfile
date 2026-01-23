@@ -47,7 +47,7 @@ RUN npm config set fetch-retry-mintimeout 100000 && npm config set fetch-retry-m
 # Grab dependencies (and force to rebuild them)
 RUN rm -rf /checode-compilation/node_modules && npm install --force
 
-RUN npm --prefix code/extensions/che-commands test
+RUN npm --prefix extensions/che-commands test
 
 # Rebuild platform specific dependencies
 RUN npm rebuild
