@@ -48,6 +48,7 @@ RUN { if [[ $(uname -m) == "s390x" ]]; then LIBSECRET="\
     else \
       LIBKEYBOARD=""; echo "Warning: arch $(uname -m) not supported"; \
     fi; } \
+    && yum install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm \
     && yum install -y $LIBSECRET $LIBKEYBOARD curl make cmake gcc gcc-c++ python3.9 git git-core-doc openssh less libX11-devel libxkbcommon bash tar gzip rsync patch patchelf \
     && yum -y clean all && rm -rf /var/cache/yum
 
