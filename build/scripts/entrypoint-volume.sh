@@ -91,18 +91,11 @@ else
     cd /checode/checode-linux-libc/ubi8 || exit
     ;;
   *"3"*)
-    export LD_LIBRARY_PATH="/checode/checode-linux-libc/ubi9/ld_libs:$LD_LIBRARY_PATH"
-    echo "[INFO] LD_LIBRARY_PATH is: $LD_LIBRARY_PATH"
-
     echo "[INFO] Using linux-libc ubi9-based assembly..."
     cd /checode/checode-linux-libc/ubi9 || exit
     ;;
   *)
     echo "[WARNING] Unsupported OpenSSL major version, linux-libc ubi9-based assembly will be used by default..."
-
-    export LD_LIBRARY_PATH="/checode/checode-linux-libc/ubi9/ld_libs:$LD_LIBRARY_PATH"
-    echo "[INFO] LD_LIBRARY_PATH is: $LD_LIBRARY_PATH"
-
     cd /checode/checode-linux-libc/ubi9 || exit
     ;;
   esac
