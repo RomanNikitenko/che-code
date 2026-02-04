@@ -48,7 +48,7 @@ RUN { if [[ $(uname -m) == "s390x" ]]; then LIBSECRET="\
     else \
       LIBKEYBOARD=""; echo "Warning: arch $(uname -m) not supported"; \
     fi; } \
-    && yum install -y $LIBSECRET $LIBKEYBOARD curl make cmake gcc gcc-c++ python3.9 git git-core-doc openssh less libX11-devel libxkbcommon bash tar gzip rsync patch \
+    && yum install -y $LIBSECRET $LIBKEYBOARD curl make cmake gcc gcc-c++ python3.9 git git-core-doc openssh less libX11-devel libxkbcommon bash tar gzip rsync patch patchelf \
     && yum -y clean all && rm -rf /var/cache/yum
 
 #########################################################
@@ -83,7 +83,14 @@ RUN NODE_ARCH=$(echo "console.log(process.arch)" | node) \
     # cache shared libs from this image to provide them to a user's container
     && mkdir -p /checode/ld_libs \
     && find /usr/lib64 -name 'libnode.so*' -exec cp -P -t /checode/ld_libs/ {} + \
-    && find /usr/lib64 -name 'libz.so*' -exec cp -P -t /checode/ld_libs/ {} +
+    && find /usr/lib64 -name 'libz.so*' -exec cp -P -t /checode/ld_libs/ {} + \
+    && find /usr/lib64 -name 'libssl.so*' -exec cp -P -t /checode/ld_libs/ {} + \
+    && find /usr/lib64 -name 'libcrypto.so*' -exec cp -P -t /checode/ld_libs/ {} + \
+    && find /usr/lib64 -name 'libstdc++.so*' -exec cp -P -t /checode/ld_libs/ {} + \
+    && find /usr/lib64 -name 'libgcc_s.so*' -exec cp -P -t /checode/ld_libs/ {} + \
+    && find /usr/lib64 -name 'libbrotli*' 2>/dev/null | xargs -I {} cp -t /checode/ld_libs {} \
+    && if [ -f /checode/node ]; then patchelf --set-rpath '/checode/checode-linux-libc/ubi8/ld_libs' /checode/node; fi \
+    && find /checode -name '*.node' -exec patchelf --set-rpath '/checode/checode-linux-libc/ubi8/ld_libs' {} +
 
 RUN chmod a+x /checode/out/server-main.js \
     && chgrp -R 0 /checode && chmod -R g+rwX /checode
