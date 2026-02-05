@@ -58,6 +58,14 @@ get_openssl_version() {
   fi
 }
 
+# UDI8 support for adding current (arbitrary) user to /etc/passwd and /etc/group
+if ! whoami &> /dev/null; then
+  if [ -w /etc/passwd ]; then
+    echo "${USER_NAME:-user}:x:$(id -u):0:${USER_NAME:-user} user:${HOME}:/bin/bash" >> /etc/passwd
+    echo "${USER_NAME:-user}:x:$(id -u):" >> /etc/group
+  fi
+fi
+
 # list checode
 ls -la /checode/
 
@@ -79,25 +87,15 @@ else
 
   case "${openssl_version}" in
   *"1"*)
-    export LD_LIBRARY_PATH="/checode/checode-linux-libc/ubi8/ld_libs:$LD_LIBRARY_PATH"
-    echo "[INFO] LD_LIBRARY_PATH is: $LD_LIBRARY_PATH"
-
     echo "[INFO] Using linux-libc ubi8-based assembly..."
     cd /checode/checode-linux-libc/ubi8 || exit
     ;;
   *"3"*)
-    export LD_LIBRARY_PATH="/checode/checode-linux-libc/ubi9/ld_libs:$LD_LIBRARY_PATH"
-    echo "[INFO] LD_LIBRARY_PATH is: $LD_LIBRARY_PATH"
-
     echo "[INFO] Using linux-libc ubi9-based assembly..."
     cd /checode/checode-linux-libc/ubi9 || exit
     ;;
   *)
     echo "[WARNING] Unsupported OpenSSL major version, linux-libc ubi9-based assembly will be used by default..."
-
-    export LD_LIBRARY_PATH="/checode/checode-linux-libc/ubi9/ld_libs:$LD_LIBRARY_PATH"
-    echo "[INFO] LD_LIBRARY_PATH is: $LD_LIBRARY_PATH"
-
     cd /checode/checode-linux-libc/ubi9 || exit
     ;;
   esac
