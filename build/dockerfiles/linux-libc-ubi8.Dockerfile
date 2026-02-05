@@ -49,7 +49,7 @@ RUN { if [[ $(uname -m) == "s390x" ]]; then LIBSECRET="\
       LIBKEYBOARD=""; echo "Warning: arch $(uname -m) not supported"; \
     fi; } \
     && yum install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm \
-    && yum install -y $LIBSECRET $LIBKEYBOARD curl make cmake gcc gcc-c++ python3.9 git git-core-doc openssh less libX11-devel libxkbcommon bash tar gzip rsync patch patchelf \
+    && yum install -y $LIBSECRET $LIBKEYBOARD curl make cmake gcc gcc-c++ python3.9 git git-core-doc openssh less libX11-devel libxkbcommon bash tar gzip rsync patch patchelf file \
     && yum -y clean all && rm -rf /var/cache/yum
 
 #########################################################
@@ -90,8 +90,11 @@ RUN NODE_ARCH=$(echo "console.log(process.arch)" | node) \
     && find /usr/lib64 -name 'libstdc++.so*' -exec cp -P -t /checode/ld_libs/ {} + \
     && find /usr/lib64 -name 'libgcc_s.so*' -exec cp -P -t /checode/ld_libs/ {} + \
     && find /usr/lib64 -name 'libbrotli*' 2>/dev/null | xargs -I {} cp -t /checode/ld_libs {} \
-    && if [ -f /checode/node ]; then patchelf --set-rpath '/checode/checode-linux-libc/ubi8/ld_libs' /checode/node; fi \
-    && find /checode -name '*.node' -exec patchelf --set-rpath '/checode/checode-linux-libc/ubi8/ld_libs' {} +
+    && if [ -f /checode/node ] && file -b /checode/node | grep -q ELF; then \
+         patchelf --set-rpath '/checode/checode-linux-libc/ubi8/ld_libs' /checode/node; \
+       fi \
+    && find /checode -name '*.node' -type f -print0 \
+       | xargs -0 -r -I {} sh -c 'if file -b "$1" | grep -q ELF; then patchelf --set-rpath "/checode/checode-linux-libc/ubi8/ld_libs" "$1"; fi' _ {}
 
 RUN chmod a+x /checode/out/server-main.js \
     && chgrp -R 0 /checode && chmod -R g+rwX /checode
