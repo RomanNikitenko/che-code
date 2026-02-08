@@ -23,7 +23,21 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 	const taskProvider = new DevfileTaskProvider(channel, cheAPI, terminalExtAPI);
 	const disposable = vscode.tasks.registerTaskProvider('devfile', taskProvider);
 
-	context.subscriptions.push(disposable);
+	context.subscriptions.push(
+		disposable,
+		vscode.tasks.onDidStartTask(event => {
+			const definition = event.execution.task.definition as vscode.TaskDefinition | undefined;
+			if (definition?.type === 'devfile') {
+				channel.appendLine(`Task started: ${event.execution.task.name} (${JSON.stringify(definition)})`);
+			}
+		}),
+		vscode.tasks.onDidEndTask(event => {
+			const definition = event.execution.task.definition as vscode.TaskDefinition | undefined;
+			if (definition?.type === 'devfile') {
+				channel.appendLine(`Task ended: ${event.execution.task.name} (${JSON.stringify(definition)})`);
+			}
+		})
+	);
 
 	await new EditorConfigurations(channel).initialize();
 }
