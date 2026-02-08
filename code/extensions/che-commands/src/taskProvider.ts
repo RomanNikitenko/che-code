@@ -46,13 +46,12 @@ export class DevfileTaskProvider implements vscode.TaskProvider {
 
 		await this.computeTasks();
 
-		if (definition.isComposite) {
-			const commandId = definition.commandId || this.getCompositeIdFromCommand(definition.command);
-			if (commandId) {
+		const commandId = definition.commandId || this.getCompositeIdFromCommand(definition.command);
+		if (commandId) {
+			const entry = this.commandById.get(commandId);
+			if (entry?.kind === 'composite') {
 				return this.createCompositeTask(task.name, commandId);
 			}
-		} else if (definition.commandId) {
-			const entry = this.commandById.get(definition.commandId);
 			if (entry?.kind === 'exec') {
 				return entry.task;
 			}
