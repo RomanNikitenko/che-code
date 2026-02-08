@@ -36,8 +36,30 @@ export class DevfileTaskProvider implements vscode.TaskProvider {
 		return this.computeTasks();
 	}
 
-	resolveTask(task: vscode.Task): vscode.ProviderResult<vscode.Task> {
-		return task;
+	async resolveTask(task: vscode.Task): Promise<vscode.Task | undefined> {
+		this.channel.appendLine('++++++++++ RESOLVE TASK ');
+		
+		const definition = task.definition as DevfileTaskDefinition;
+		if (!definition || definition.type !== 'devfile') {
+			return task;
+		}
+
+		await this.computeTasks();
+
+		if (definition.isComposite) {
+			const commandId = definition.commandId || this.getCompositeIdFromCommand(definition.command);
+			if (commandId) {
+				return this.createCompositeTask(task.name, commandId);
+			}
+		} else if (definition.commandId) {
+			const entry = this.commandById.get(definition.commandId);
+			if (entry?.kind === 'exec') {
+				return entry.task;
+			}
+		}
+
+		const cached = this.tasksCache?.find(candidate => candidate.name === task.name);
+		return cached ?? task;
 	}
 
 	private async computeTasks(): Promise<vscode.Task[]> {
@@ -77,7 +99,7 @@ export class DevfileTaskProvider implements vscode.TaskProvider {
 				const commandIds = composite?.commands || [];
 				const parallel = Boolean(composite?.parallel);
 				this.commandById.set(command.id, { kind: 'composite', name, commandIds, parallel });
-				return this.createCompositeTask(name, commandIds, parallel, command.id);
+				return this.createCompositeTask(name, command.id);
 			});
 
 		this.tasksCache = [...execTasks, ...compositeTasks];
@@ -139,7 +161,7 @@ export class DevfileTaskProvider implements vscode.TaskProvider {
 		return task;
 	}
 
-	private createCompositeTask(name: string, _commandIds: string[], _parallel: boolean, commandId: string): vscode.Task {
+	private createCompositeTask(name: string, commandId: string): vscode.Task {
 		const kind: DevfileTaskDefinition = {
 			type: 'devfile',
 			command: `composite:${commandId}`,
@@ -206,6 +228,9 @@ export class DevfileTaskProvider implements vscode.TaskProvider {
 		activeExecutions: vscode.TaskExecution[],
 		write: (message: string) => void
 	): Promise<{ failed: boolean }> {
+		if (this.commandById.size === 0) {
+			await this.computeTasks();
+		}
 		const entry = this.commandById.get(commandId);
 		if (!entry || entry.kind !== 'composite') {
 			const message = `Composite task not found: ${commandId}`;
@@ -287,5 +312,12 @@ export class DevfileTaskProvider implements vscode.TaskProvider {
 				}
 			});
 		});
+	}
+
+	private getCompositeIdFromCommand(command?: string): string | undefined {
+		if (!command) {
+			return undefined;
+		}
+		return command.startsWith('composite:') ? command.slice('composite:'.length) : undefined;
 	}
 }

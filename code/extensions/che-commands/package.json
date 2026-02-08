@@ -70,6 +70,10 @@
             "type": "string",
             "description": "Target Container"
           },
+          "commandId": {
+            "type": "string",
+            "description": "Devfile command id"
+          },
           "isComposite": {
             "type": "boolean",
             "description": "Marks a composite devfile task"
