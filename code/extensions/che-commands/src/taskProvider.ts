@@ -18,11 +18,16 @@ interface DevfileTaskDefinition extends vscode.TaskDefinition {
 	workdir?: string;
 	component?: string;
 	commandId?: string;
+	isComposite?: boolean;
 }
 
+type DevfileCommandEntry =
+	| { kind: 'exec'; task: vscode.Task }
+	| { kind: 'composite'; name: string; commandIds: string[]; parallel: boolean };
+
 export class DevfileTaskProvider implements vscode.TaskProvider {
-	private execTaskById = new Map<string, vscode.Task>();
-	private compositeConfigById = new Map<string, { name: string; commandIds: string[]; parallel: boolean }>();
+	private commandById = new Map<string, DevfileCommandEntry>();
+	private tasksCache: vscode.Task[] | undefined;
 
 	constructor(private channel: vscode.OutputChannel, private cheAPI: any, private terminalExtAPI: any) {
 	}
@@ -36,6 +41,9 @@ export class DevfileTaskProvider implements vscode.TaskProvider {
 	}
 
 	private async computeTasks(): Promise<vscode.Task[]> {
+		if (this.tasksCache) {
+			return this.tasksCache;
+		}
 		const devfileCommands = await this.fetchDevfileCommands();
 
 		const localCommands = devfileCommands!
@@ -45,7 +53,7 @@ export class DevfileTaskProvider implements vscode.TaskProvider {
 			})
 			.filter(command => !/^init-ssh-agent-command-\d+$/.test(command.id));
 
-		this.execTaskById.clear();
+		this.commandById.clear();
 		const execTasks: vscode.Task[] = localCommands
 			.filter(command => command.exec?.commandLine)
 			.map(command => {
@@ -57,11 +65,10 @@ export class DevfileTaskProvider implements vscode.TaskProvider {
 					command.exec?.env,
 					command.id
 				);
-				this.execTaskById.set(command.id, task);
+				this.commandById.set(command.id, { kind: 'exec', task });
 				return task;
 			});
 
-		this.compositeConfigById.clear();
 		const compositeTasks: vscode.Task[] = localCommands
 			.filter(command => (command as any).composite?.commands?.length)
 			.map(command => {
@@ -69,11 +76,12 @@ export class DevfileTaskProvider implements vscode.TaskProvider {
 				const name = composite?.label || command.id;
 				const commandIds = composite?.commands || [];
 				const parallel = Boolean(composite?.parallel);
-				this.compositeConfigById.set(command.id, { name, commandIds, parallel });
+				this.commandById.set(command.id, { kind: 'composite', name, commandIds, parallel });
 				return this.createCompositeTask(name, commandIds, parallel, command.id);
 			});
 
-		return [...execTasks, ...compositeTasks];
+		this.tasksCache = [...execTasks, ...compositeTasks];
+		return this.tasksCache;
 	}
 
 	private async fetchDevfileCommands(): Promise<V1alpha2DevWorkspaceSpecTemplateCommands[]> {
@@ -135,18 +143,19 @@ export class DevfileTaskProvider implements vscode.TaskProvider {
 		const kind: DevfileTaskDefinition = {
 			type: 'devfile',
 			command: `composite:${commandId}`,
-			commandId
+			commandId,
+			isComposite: true
 		};
 
 		const execution = this.createCompositeExecution(commandId);
 		const task = new vscode.Task(kind, vscode.TaskScope.Workspace, name, 'devfile', execution, []);
 		task.presentationOptions = {
-			reveal: vscode.TaskRevealKind.Never,
-			panel: vscode.TaskPanelKind.Shared,
+			reveal: vscode.TaskRevealKind.Silent,
+			panel: vscode.TaskPanelKind.Dedicated,
 			focus: false,
 			echo: false,
 			showReuseMessage: false,
-			close: true
+			close: false
 		};
 		return task;
 	}
@@ -155,6 +164,9 @@ export class DevfileTaskProvider implements vscode.TaskProvider {
 		const writeEmitter = new vscode.EventEmitter<string>();
 		const closeEmitter = new vscode.EventEmitter<number | void>();
 		const activeExecutions: vscode.TaskExecution[] = [];
+		const write = (message: string): void => {
+			writeEmitter.fire(message.endsWith('\n') ? message : `${message}\r\n`);
+		};
 
 		return new vscode.CustomExecution(async (): Promise<vscode.Pseudoterminal> => {
 			const pty: vscode.Pseudoterminal = {
@@ -163,16 +175,18 @@ export class DevfileTaskProvider implements vscode.TaskProvider {
 				open: async () => {
 					let exitCode = 0;
 					try {
-						const result = await this.runCompositeById(commandId, activeExecutions);
+						write(`Composite task started: ${commandId}`);
+						const result = await this.runCompositeById(commandId, activeExecutions, write);
 						if (result.failed) {
 							exitCode = 1;
 						}
 					} catch (error) {
 						exitCode = 1;
 						const message = `Composite task failed: ${String(error)}`;
-						writeEmitter.fire(`${message}\r\n`);
+						write(message);
 						this.channel.appendLine(message);
 					} finally {
+						write(`Composite task finished: ${commandId}`);
 						closeEmitter.fire(exitCode);
 					}
 				},
@@ -180,35 +194,43 @@ export class DevfileTaskProvider implements vscode.TaskProvider {
 					for (const execution of activeExecutions) {
 						execution.terminate();
 					}
+					write('Composite task terminated by user.');
 				}
 			};
 			return pty;
 		});
 	}
 
-	private async runCompositeById(commandId: string, activeExecutions: vscode.TaskExecution[]): Promise<{ failed: boolean }> {
-		const config = this.compositeConfigById.get(commandId);
-		if (!config) {
-			this.channel.appendLine(`Composite task not found: ${commandId}`);
+	private async runCompositeById(
+		commandId: string,
+		activeExecutions: vscode.TaskExecution[],
+		write: (message: string) => void
+	): Promise<{ failed: boolean }> {
+		const entry = this.commandById.get(commandId);
+		if (!entry || entry.kind !== 'composite') {
+			const message = `Composite task not found: ${commandId}`;
+			write(message);
+			this.channel.appendLine(message);
 			return { failed: true };
 		}
-		return this.runCompositeCommands(config.commandIds, config.parallel, activeExecutions, []);
+		return this.runCompositeCommands(entry.commandIds, entry.parallel, activeExecutions, [], write);
 	}
 
 	private async runCompositeCommands(
 		commandIds: string[],
 		parallel: boolean,
 		activeExecutions: vscode.TaskExecution[],
-		stack: string[]
+		stack: string[],
+		write: (message: string) => void
 	): Promise<{ failed: boolean }> {
 		if (parallel) {
-			const results = await Promise.all(commandIds.map(id => this.runCommandById(id, activeExecutions, stack)));
+			const results = await Promise.all(commandIds.map(id => this.runCommandById(id, activeExecutions, stack, write)));
 			return { failed: results.some(result => result.failed) };
 		}
 
 		let failed = false;
 		for (const id of commandIds) {
-			const result = await this.runCommandById(id, activeExecutions, stack);
+			const result = await this.runCommandById(id, activeExecutions, stack, write);
 			if (result.failed) {
 				failed = true;
 			}
@@ -219,30 +241,37 @@ export class DevfileTaskProvider implements vscode.TaskProvider {
 	private async runCommandById(
 		commandId: string,
 		activeExecutions: vscode.TaskExecution[],
-		stack: string[]
+		stack: string[],
+		write: (message: string) => void
 	): Promise<{ failed: boolean }> {
 		if (stack.includes(commandId)) {
-			this.channel.appendLine(`Composite cycle detected: ${[...stack, commandId].join(' -> ')}`);
+			const message = `Composite cycle detected: ${[...stack, commandId].join(' -> ')}`;
+			write(message);
+			this.channel.appendLine(message);
 			return { failed: true };
 		}
-		const execTask = this.execTaskById.get(commandId);
-		if (execTask) {
-			const execution = await vscode.tasks.executeTask(execTask);
+		const entry = this.commandById.get(commandId);
+		if (entry?.kind === 'exec') {
+			write(`Starting ${entry.task.name}`);
+			const execution = await vscode.tasks.executeTask(entry.task);
 			activeExecutions.push(execution);
-			const failed = await this.waitForTaskEnd(execution);
-			return { failed };
+			const result = await this.waitForTaskEnd(execution);
+			const status = result.exitCode === undefined ? 'unknown' : result.exitCode;
+			write(`Completed ${entry.task.name} (exit code ${status})`);
+			return { failed: result.exitCode !== undefined && result.exitCode !== 0 };
 		}
 
-		const compositeConfig = this.compositeConfigById.get(commandId);
-		if (compositeConfig) {
-			return this.runCompositeCommands(compositeConfig.commandIds, compositeConfig.parallel, activeExecutions, [...stack, commandId]);
+		if (entry?.kind === 'composite') {
+			return this.runCompositeCommands(entry.commandIds, entry.parallel, activeExecutions, [...stack, commandId], write);
 		}
 
-		this.channel.appendLine(`Composite dependency not found: ${commandId}`);
+		const message = `Composite dependency not found: ${commandId}`;
+		write(message);
+		this.channel.appendLine(message);
 		return { failed: true };
 	}
 
-	private waitForTaskEnd(execution: vscode.TaskExecution): Promise<boolean> {
+	private waitForTaskEnd(execution: vscode.TaskExecution): Promise<{ exitCode: number | undefined }> {
 		return new Promise(resolve => {
 			let exitCode: number | undefined;
 			const processDisposable = vscode.tasks.onDidEndTaskProcess(event => {
@@ -254,7 +283,7 @@ export class DevfileTaskProvider implements vscode.TaskProvider {
 				if (event.execution === execution) {
 					processDisposable.dispose();
 					disposable.dispose();
-					resolve(exitCode !== undefined && exitCode !== 0);
+					resolve({ exitCode });
 				}
 			});
 		});

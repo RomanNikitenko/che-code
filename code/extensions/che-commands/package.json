@@ -69,6 +69,10 @@
           "component": {
             "type": "string",
             "description": "Target Container"
+          },
+          "isComposite": {
+            "type": "boolean",
+            "description": "Marks a composite devfile task"
           }
         },
         "when": "customExecutionSupported"
