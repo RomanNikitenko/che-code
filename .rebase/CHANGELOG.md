@@ -2,12 +2,79 @@
 
 The file to keep a list of changed files which will potentionaly help to resolve rebase conflicts.
 
+#### @sbouchet
+https://github.com/che-incubator/che-code/pull/659
+
+- code/package.json
+- code/build/package.json
+- code/build/npm/gyp/package.json
+- code/extensions/css-language-features/package.json
+- code/extensions/html-language-features/package.json
+- code/extensions/json-language-features/package.json
+- code/extensions/markdown-language-features/package.json
+- code/extensions/npm/package.json
+- code/test/mcp/package.json
+- code/test/automation/package.json
+- code/test/integration/browser/package.json
+- code/test/smoke/package.json
+---
+
+#### @sbouchet
+https://github.com/che-incubator/che-code/pull/669
+
+- code/extensions/github-authentication/package.json
+- code/extensions/notebook-renderers/package.json
+- code/test/smoke/package.json
+---
+
+#### @sbouchet
+https://github.com/che-incubator/che-code/pull/670
+
+- code/package.json
+---
+
+#### @sbouchet
+https://github.com/che-incubator/che-code/pull/668
+
+- code/package.json
+- code/remote/package.json
+---
+
+#### @sbouchet
+https://github.com/che-incubator/che-code/pull/662
+
+- code/build/package.json
+---
+
+#### @sbouchet
+https://github.com/che-incubator/che-code/pull/661
+
+- code/package.json
+- code/build/npm/gyp/package.json
+---
+
 #### @RomanNikitenko
 https://github.com/che-incubator/che-code/pull/655
 
 - code/src/vs/platform/shell/node/shellEnv.ts
 - code/src/vs/server/node/remoteTerminalChannel.ts
 - code/src/vs/server/node/extensionHostConnection.ts
+---
+
+#### @sbouchet
+https://github.com/che-incubator/che-code/pull/654
+
+- code/test/mcp/package.json
+- code/package.json
+---
+
+#### @sbouchet
+https://github.com/che-incubator/che-code/pull/648
+
+- code/package.json
+- code/build/npm/gyp/package.json
+- code/build/gulpfile.cli.js
+- code/build/gulpfile.reh.js
 ---
 
 #### @sbouchet

@@ -32,6 +32,36 @@
         "@azure/core-http": {
             "form-data": "4.0.4"
         },
-        "lodash": "^4.17.23"
+        "lodash": "^4.17.23",
+        "ajv": "6.14.0",
+        "ajv-formats": {
+            "ajv": "^8.18.0"
+        },
+        "schema-utils": {
+            "ajv": "^8.18.0"
+        },
+        "tar": "^7.5.11",
+        "undici": "^7.24.0",
+        "svgo": "^2.8.1",
+        "@vscode/test-cli": {
+            "minimatch": "^9.0.9"
+        },
+        "@ts-morph/common": {
+            "minimatch": "^7.4.9"
+        },
+        "@vscode/l10n-dev": {
+            "minimatch": "^5.1.9"
+        },
+        "tsec": {
+            "minimatch": "^3.1.5"
+        },
+        "@typescript-eslint/typescript-estree": {
+            "minimatch": "^9.0.9"
+        },
+        "mocha": {
+            "glob": {
+                "minimatch": "^5.1.9"
+            }
+        }
     }
 }
