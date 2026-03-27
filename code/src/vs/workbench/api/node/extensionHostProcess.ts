@@ -81,14 +81,31 @@ const args = minimist(process.argv.slice(2), {
 (function () {
 	const Module = require('module');
 	const originalLoad = Module._load;
+	let lastModuleRequest: string | undefined;
+	let lastModuleParent: string | undefined;
 
-	Module._load = function (request: string) {
+	Module._load = function (request: string, parent: { id?: string; filename?: string } | undefined) {
+		const prevRequest = lastModuleRequest;
+		const prevParent = lastModuleParent;
+		lastModuleRequest = request;
+		lastModuleParent = parent?.filename ?? parent?.id;
+
 		if (request === 'natives') {
 			throw new Error('Either the extension or an NPM dependency is using the [unsupported "natives" node module](https://go.microsoft.com/fwlink/?linkid=871887).');
 		}
 
-		return originalLoad.apply(this, arguments);
+		try {
+			return originalLoad.apply(this, arguments);
+		} finally {
+			lastModuleRequest = prevRequest;
+			lastModuleParent = prevParent;
+		}
 	};
+
+	(globalThis as unknown as { __vscodePendingMigrationLastModule?: () => { request?: string; parent?: string } }).__vscodePendingMigrationLastModule = () => ({
+		request: lastModuleRequest,
+		parent: lastModuleParent
+	});
 })();
 
 // custom process.exit logic...
@@ -140,12 +157,31 @@ function patchProcess(allowExit: boolean) {
 // NodeJS since v21 defines navigator as a global object. This will likely surprise many extensions and potentially break them
 // because `navigator` has historically often been used to check if running in a browser (vs running inside NodeJS)
 if (!args.supportGlobalNavigator) {
+	let navigatorAccessCount = 0;
+	let hasSuppressedNavigatorLogs = false;
+	const maxNavigatorLogs = 25;
 	Object.defineProperty(globalThis, 'navigator', {
 		get: () => {
 			onUnexpectedExternalError(new PendingMigrationError('navigator is now a global in nodejs, please see https://aka.ms/vscode-extensions/navigator for additional info on this error.'));
+			navigatorAccessCount++;
+			if (navigatorAccessCount <= maxNavigatorLogs) {
+				const moduleTracker = (globalThis as unknown as { __vscodePendingMigrationLastModule?: () => { request?: string; parent?: string } }).__vscodePendingMigrationLastModule;
+				const moduleContext = moduleTracker?.() ?? {};
+				const stack = new Error().stack?.split('\n').slice(2, 10).join('\n');
+				console.error(`[pending-migration][navigator] access #${navigatorAccessCount}; lastModule="${moduleContext.request ?? 'unknown'}"; parent="${moduleContext.parent ?? 'unknown'}"`);
+				if (stack) {
+					console.error(`[pending-migration][navigator] stack:\n${stack}`);
+				}
+			} else if (!hasSuppressedNavigatorLogs) {
+				hasSuppressedNavigatorLogs = true;
+				console.error(`[pending-migration][navigator] additional accesses suppressed after ${maxNavigatorLogs} logs`);
+			}
 			return undefined;
 		}
 	});
+	console.error('[pending-migration][navigator] migration guard active; detailed accesses will be logged');
+} else {
+	console.error('[pending-migration][navigator] supportGlobalNavigator=true; PendingMigrationError disabled');
 }
 
 
