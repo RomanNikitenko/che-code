@@ -11,6 +11,7 @@
 #   Red Hat, Inc. - initial API and implementation
 #
 
+echo "[INFO] Test = Version 1"
 libssl_version=""
 get_libssl_version() {
   libssl=$(find / -type f \( -name "libssl.so*" \) 2>/dev/null)
