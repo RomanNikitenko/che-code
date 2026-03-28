@@ -16,8 +16,8 @@ import {
   devworkspacePlural,
   V1alpha2DevWorkspace
 } from '@devfile/api';
-import * as k8s from '@kubernetes/client-node';
-import type { CoreV1Api, CustomObjectsApi, KubeConfig, V1Secret } from '@kubernetes/client-node';
+import { CoreV1Api, CustomObjectsApi, KubeConfig } from '@kubernetes/client-node';
+import type { V1Secret } from '@kubernetes/client-node';
 import { injectable } from 'inversify';
 
 const PART_OF_LABEL = 'app.kubernetes.io/part-of';
@@ -33,7 +33,7 @@ export class K8sHelper {
   private devWorkspaceNamespace!: string;
 
   constructor() {
-    this.k8sConfig = new k8s.KubeConfig();
+    this.k8sConfig = new KubeConfig();
   }
 
   getConfig(): KubeConfig {
@@ -43,7 +43,7 @@ export class K8sHelper {
   getCoreApi(): CoreV1Api {
     if (!this.coreV1API) {
       this.k8sConfig.loadFromDefault();
-      this.coreV1API = this.k8sConfig.makeApiClient(k8s.CoreV1Api);
+      this.coreV1API = this.k8sConfig.makeApiClient(CoreV1Api);
     }
     return this.coreV1API;
   }
@@ -51,7 +51,7 @@ export class K8sHelper {
   getCustomObjectsApi(): CustomObjectsApi {
     if (!this.customObjectsApi) {
       this.k8sConfig.loadFromCluster();
-      this.customObjectsApi = this.k8sConfig.makeApiClient(k8s.CustomObjectsApi);
+      this.customObjectsApi = this.k8sConfig.makeApiClient(CustomObjectsApi);
     }
     return this.customObjectsApi;
   }
