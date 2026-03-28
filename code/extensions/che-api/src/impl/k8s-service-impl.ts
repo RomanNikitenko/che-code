@@ -15,7 +15,8 @@ import {
   devworkspacePlural,
   V1alpha2DevWorkspace
 } from '@devfile/api';
-import * as k8s from '@kubernetes/client-node';
+import { CoreV1Api, CustomObjectsApi, KubeConfig } from '@kubernetes/client-node';
+import type { ApiConstructor, ApiType, V1Secret } from '@kubernetes/client-node';
 
 import * as vscode from 'vscode';
 import { injectable } from 'inversify';
@@ -26,14 +27,14 @@ import fetch, { RequestInit } from 'node-fetch';
 
 @injectable()
 export class K8SServiceImpl implements K8SService {
-  private coreV1API!: k8s.CoreV1Api;
-  private customObjectsApi!: k8s.CustomObjectsApi;
-  private k8sConfig: k8s.KubeConfig;
+  private coreV1API!: CoreV1Api;
+  private customObjectsApi!: CustomObjectsApi;
+  private k8sConfig: KubeConfig;
   private devWorkspaceName!: string;
   private devWorkspaceNamespace!: string;
 
   constructor() {
-    this.k8sConfig = new k8s.KubeConfig();
+    this.k8sConfig = new KubeConfig();
     this.k8sConfig.loadFromCluster();
   }
 
@@ -116,31 +117,31 @@ export class K8SServiceImpl implements K8SService {
     }
   }
 
-  getConfig(): k8s.KubeConfig {
+  getConfig(): KubeConfig {
     return this.k8sConfig;
   }
 
-  makeApiClient<T extends k8s.ApiType>(apiClientType: k8s.ApiConstructor<T>): T {
+  makeApiClient<T extends ApiType>(apiClientType: ApiConstructor<T>): T {
     return this.k8sConfig.makeApiClient(apiClientType);
   }
 
-  getCoreApi(): k8s.CoreV1Api {
+  getCoreApi(): CoreV1Api {
     if (!this.coreV1API) {
       this.k8sConfig.loadFromCluster();
-      this.coreV1API = this.k8sConfig.makeApiClient(k8s.CoreV1Api);
+      this.coreV1API = this.k8sConfig.makeApiClient(CoreV1Api);
     }
     return this.coreV1API;
   }
 
-  getCustomObjectsApi(): k8s.CustomObjectsApi {
+  getCustomObjectsApi(): CustomObjectsApi {
     if (!this.customObjectsApi) {
       this.k8sConfig.loadFromCluster();
-      this.customObjectsApi = this.k8sConfig.makeApiClient(k8s.CustomObjectsApi);
+      this.customObjectsApi = this.k8sConfig.makeApiClient(CustomObjectsApi);
     }
     return this.customObjectsApi;
   }
 
-  async getSecret(labelSelector?: string): Promise<Array<k8s.V1Secret>> {
+  async getSecret(labelSelector?: string): Promise<Array<V1Secret>> {
     const namespace = this.getDevWorkspaceNamespace();
     if (!namespace) {
       throw new Error('Can not get secrets: DEVWORKSPACE_NAMESPACE env variable is not defined');
@@ -159,7 +160,7 @@ export class K8SServiceImpl implements K8SService {
     }
   }
 
-  async replaceNamespacedSecret(name: string, secret: k8s.V1Secret): Promise<void> {
+  async replaceNamespacedSecret(name: string, secret: V1Secret): Promise<void> {
     const namespace = this.getDevWorkspaceNamespace();
     if (!namespace) {
       throw new Error('Can not replace a secret: DEVWORKSPACE_NAMESPACE env variable is not defined');
@@ -173,7 +174,7 @@ export class K8SServiceImpl implements K8SService {
     });
   }
 
-  async createNamespacedSecret(secret: k8s.V1Secret): Promise<void> {
+  async createNamespacedSecret(secret: V1Secret): Promise<void> {
     const namespace = this.getDevWorkspaceNamespace();
     if (!namespace) {
       throw new Error('Can not create a secret: DEVWORKSPACE_NAMESPACE env variable is not defined');
@@ -186,7 +187,7 @@ export class K8SServiceImpl implements K8SService {
     });
   }
 
-  async deleteNamespacedSecret(secret: k8s.V1Secret): Promise<void> {
+  async deleteNamespacedSecret(secret: V1Secret): Promise<void> {
     const namespace = this.getDevWorkspaceNamespace();
     if (!namespace) {
       throw new Error('Can not delete a secret: DEVWORKSPACE_NAMESPACE env variable is not defined');

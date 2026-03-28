@@ -10,7 +10,7 @@
 
 /* eslint-disable header/header */
 
-import * as k8s from '@kubernetes/client-node';
+import type { V1Secret } from '@kubernetes/client-node';
 import * as fs from 'fs-extra';
 import { inject, injectable } from 'inversify';
 import * as path from 'path';
@@ -203,7 +203,7 @@ export class GithubServiceImpl implements GithubService {
   }
 }
 
-function toDeviceAuthSecret(token: string, namespace: string): k8s.V1Secret {
+function toDeviceAuthSecret(token: string, namespace: string): V1Secret {
   return {
     apiVersion: 'v1',
     kind: 'Secret',

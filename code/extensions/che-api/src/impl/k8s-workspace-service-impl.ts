@@ -10,7 +10,7 @@
 
 /* eslint-disable header/header */
 
-import * as k8s from '@kubernetes/client-node';
+import { CustomObjectsApi } from '@kubernetes/client-node';
 import { inject, injectable } from 'inversify';
 import { K8SServiceImpl } from './k8s-service-impl';
 import { K8sDevWorkspaceEnvVariables } from './k8s-devworkspace-env-variables';
@@ -59,7 +59,7 @@ export class K8sWorkspaceServiceImpl implements WorkspaceService {
 
   // stopping the workspace is changing the started state to false
   public async stop(): Promise<void> {
-    const customObjectsApi = this.k8SService.makeApiClient(k8s.CustomObjectsApi);
+    const customObjectsApi = this.k8SService.makeApiClient(CustomObjectsApi);
     const group = 'workspace.devfile.io';
     const version = 'v1alpha2';
     const namespace = this.env.getWorkspaceNamespace();

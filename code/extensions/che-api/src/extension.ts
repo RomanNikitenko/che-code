@@ -32,9 +32,7 @@ import { TelemetryService } from './api/telemetry-service';
 import { K8sTelemetryServiceImpl } from './impl/k8s-telemetry-service-impl';
 import { Logger } from './logger';
 
-
 export async function activate(_extensionContext: vscode.ExtensionContext): Promise<Api> {
-
     const container = new Container();
     container.bind(K8sDevfileServiceImpl).toSelf().inSingletonScope();
     container.bind(DevfileService).to(K8sDevfileServiceImpl).inSingletonScope();

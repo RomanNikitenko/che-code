@@ -12,7 +12,8 @@
 
 import * as fs from 'fs-extra';
 import * as jsYaml from 'js-yaml';
-import * as k8s from '@kubernetes/client-node';
+import { CoreV1Api, CustomObjectsApi } from '@kubernetes/client-node';
+import type { V1Pod } from '@kubernetes/client-node';
 
 import {
   V1alpha2DevWorkspaceSpecTemplate
@@ -23,7 +24,6 @@ import { inject, injectable } from 'inversify';
 import { K8SServiceImpl } from './k8s-service-impl';
 import { DevfileService } from '../api/devfile-service';
 import { K8sDevWorkspaceEnvVariables } from './k8s-devworkspace-env-variables';
-import { V1Pod } from '@kubernetes/client-node';
 
 @injectable()
 export class K8sDevfileServiceImpl implements DevfileService {
@@ -48,7 +48,7 @@ export class K8sDevfileServiceImpl implements DevfileService {
 
   async getWorkspacePod(): Promise<V1Pod> {
     // get workspace pod
-    const k8sCoreV1Api = this.k8SService.makeApiClient(k8s.CoreV1Api);
+    const k8sCoreV1Api = this.k8SService.makeApiClient(CoreV1Api);
     const labelSelector = `controller.devfile.io/devworkspace_id=${this.env.getWorkspaceId()}`;
     const podList = await k8sCoreV1Api.listNamespacedPod({
       namespace: this.env.getWorkspaceNamespace(),
@@ -68,7 +68,7 @@ export class K8sDevfileServiceImpl implements DevfileService {
 
   async updateDevfile(devfile: V1alpha2DevWorkspaceSpecTemplate): Promise<void> {
     // Grab custom resource object
-    const customObjectsApi = this.k8SService.makeApiClient(k8s.CustomObjectsApi);
+    const customObjectsApi = this.k8SService.makeApiClient(CustomObjectsApi);
     const group = 'workspace.devfile.io';
     const version = 'v1alpha2';
 

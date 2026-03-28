@@ -17,6 +17,7 @@ import {
   V1alpha2DevWorkspace
 } from '@devfile/api';
 import * as k8s from '@kubernetes/client-node';
+import type { CoreV1Api, CustomObjectsApi, KubeConfig, V1Secret } from '@kubernetes/client-node';
 import { injectable } from 'inversify';
 
 const PART_OF_LABEL = 'app.kubernetes.io/part-of';
@@ -25,22 +26,21 @@ const CHE_ECLIPSE_ORG_DEVFILE_LABEL = 'che.eclipse.org/devfile';
 
 @injectable()
 export class K8sHelper {
-  private coreV1API!: k8s.CoreV1Api;
-  private customObjectsApi!: k8s.CustomObjectsApi;
-  private k8sConfig: k8s.KubeConfig;
+  private coreV1API!: CoreV1Api;
+  private customObjectsApi!: CustomObjectsApi;
+  private k8sConfig: KubeConfig;
   private devWorkspaceName!: string;
   private devWorkspaceNamespace!: string;
-
 
   constructor() {
     this.k8sConfig = new k8s.KubeConfig();
   }
 
-  getConfig(): k8s.KubeConfig {
+  getConfig(): KubeConfig {
     return this.k8sConfig;
   }
 
-  getCoreApi(): k8s.CoreV1Api {
+  getCoreApi(): CoreV1Api {
     if (!this.coreV1API) {
       this.k8sConfig.loadFromDefault();
       this.coreV1API = this.k8sConfig.makeApiClient(k8s.CoreV1Api);
@@ -48,7 +48,7 @@ export class K8sHelper {
     return this.coreV1API;
   }
 
-  getCustomObjectsApi(): k8s.CustomObjectsApi {
+  getCustomObjectsApi(): CustomObjectsApi {
     if (!this.customObjectsApi) {
       this.k8sConfig.loadFromCluster();
       this.customObjectsApi = this.k8sConfig.makeApiClient(k8s.CustomObjectsApi);
@@ -76,7 +76,7 @@ export class K8sHelper {
     }
   }
 
-  async getSecret(labelSelector?: string): Promise<Array<k8s.V1Secret>> {
+  async getSecret(labelSelector?: string): Promise<Array<V1Secret>> {
     const coreV1API = this.getCoreApi();
     const namespace = this.getDevWorkspaceNamespace();
     if (!namespace) {
@@ -126,8 +126,8 @@ export class K8sHelper {
   }
 }
 
-export function filterCheSecrets(secrets: k8s.V1Secret[]): k8s.V1Secret[] {
-  return secrets.filter((secret: k8s.V1Secret) => {
+export function filterCheSecrets(secrets: V1Secret[]): V1Secret[] {
+  return secrets.filter((secret: V1Secret) => {
     console.log('part of ', secret.metadata!.labels![PART_OF_LABEL]);
     if (secret.metadata!.labels![PART_OF_LABEL] === CHE_ECLIPSE_ORG_LABEL) {
       return true;
