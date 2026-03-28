@@ -35,7 +35,6 @@ export class K8SServiceImpl implements K8SService {
 
   constructor() {
     this.k8sConfig = new KubeConfig();
-    this.k8sConfig.loadFromCluster();
   }
 
   async ensureKubernetesServiceHostWhitelisted(): Promise<void> {
