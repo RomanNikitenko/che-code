@@ -35,12 +35,23 @@ const GIT_CREDENTIALS_LABEL_SELECTOR: string = createLabelsSelector(GIT_CREDENTI
 @injectable()
 export class GithubServiceImpl implements GithubService {
   private token: string | undefined;
+  private tokenInitializationPromise: Promise<void> | undefined;
 
   constructor(
     @inject(Logger) private logger: Logger,
     @inject(K8SServiceImpl) private readonly k8sService: K8SServiceImpl
-  ) {
-    this.initializeToken();
+  ) {}
+
+  private async ensureTokenInitialized(): Promise<void> {
+    if (this.token !== undefined) {
+      return;
+    }
+    if (!this.tokenInitializationPromise) {
+      this.tokenInitializationPromise = this.initializeToken().finally(() => {
+        this.tokenInitializationPromise = undefined;
+      });
+    }
+    await this.tokenInitializationPromise;
   }
 
   private checkToken(): void {
@@ -50,17 +61,20 @@ export class GithubServiceImpl implements GithubService {
   }
 
   async getToken(): Promise<string> {
+    await this.ensureTokenInitialized();
     this.checkToken();
     return this.token!;
   }
 
   async getUser(): Promise<GithubUser> {
+    await this.ensureTokenInitialized();
     this.checkToken();
     const result = await this.fetchGithubUser(this.token!);
     return result.user;
   }
 
   async getTokenScopes(token: string): Promise<string[]> {
+    await this.ensureTokenInitialized();
     this.checkToken();
     const result = await this.fetchGithubUser(token);
     return result.scopes;
@@ -128,7 +142,8 @@ export class GithubServiceImpl implements GithubService {
     }
 
     // another token should be used by the Github Service after removing the Device Authentication token
-    this.initializeToken();
+    this.token = undefined;
+    await this.ensureTokenInitialized();
   }
 
   private async initializeToken(): Promise<void> {
