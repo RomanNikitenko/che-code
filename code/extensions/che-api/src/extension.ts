@@ -45,22 +45,18 @@ export async function activate(_extensionContext: vscode.ExtensionContext): Prom
     container.bind(TelemetryService).to(K8sTelemetryServiceImpl).inSingletonScope();
     container.bind(Logger).toSelf().inSingletonScope();
 
-    const devfileService = container.get(DevfileService) as DevfileService;
-    const workspaceService = container.get(WorkspaceService) as WorkspaceService;
-    const githubService = container.get(GithubService) as GithubService;
-    const telemetryService = container.get(TelemetryService) as TelemetryService;
     const api: Api = {
         getDevfileService(): DevfileService {
-            return devfileService;
+            return container.get(DevfileService) as DevfileService;
         },
         getWorkspaceService(): WorkspaceService {
-            return workspaceService;
+            return container.get(WorkspaceService) as WorkspaceService;
         },
         getGithubService(): GithubService {
-            return githubService;
+            return container.get(GithubService) as GithubService;
         },
         getTelemetryService(): TelemetryService {
-            return telemetryService;
+            return container.get(TelemetryService) as TelemetryService;
         },
     };
 
