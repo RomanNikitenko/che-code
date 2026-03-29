@@ -13,7 +13,7 @@
 import {
   V1alpha2DevWorkspaceSpecTemplate
 } from '@devfile/api';
-import * as k8s from '@kubernetes/client-node';
+import type { V1Secret } from '@kubernetes/client-node';
 import { inject, injectable } from 'inversify';
 import * as path from 'path';
 import * as vscode from 'vscode';
@@ -53,7 +53,7 @@ export class ErrorHandler {
   }
 
   // the token is present, but is expired
-  private async onTokenExpired(gitCredentialSecrets: Array<k8s.V1Secret>): Promise<void> {
+  private async onTokenExpired(gitCredentialSecrets: Array<V1Secret>): Promise<void> {
     const cheSecrets = filterCheSecrets(gitCredentialSecrets);
     if (cheSecrets.length > 0) {
       this.onCheControlledTokenExpired();

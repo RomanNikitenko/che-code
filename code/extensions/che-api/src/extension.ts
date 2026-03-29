@@ -21,20 +21,27 @@ import * as vscode from 'vscode';
 import { Api } from './api/api';
 import { DevfileService } from './api/devfile-service';
 import { K8SService } from './api/k8s-service';
-import { K8sDevfileServiceImpl } from './impl/k8s-devfile-service-impl';
-import { K8SServiceImpl } from './impl/k8s-service-impl';
-import { K8sDevWorkspaceEnvVariables } from './impl/k8s-devworkspace-env-variables';
 import { WorkspaceService } from './api/workspace-service';
-import { K8sWorkspaceServiceImpl } from './impl/k8s-workspace-service-impl';
 import { GithubService } from './api/github-service';
-import { GithubServiceImpl } from './impl/github-service-impl';
 import { TelemetryService } from './api/telemetry-service';
-import { K8sTelemetryServiceImpl } from './impl/k8s-telemetry-service-impl';
-import * as axios from 'axios';
 import { Logger } from './logger';
 
-
 export async function activate(_extensionContext: vscode.ExtensionContext): Promise<Api> {
+    const [
+        { K8sDevfileServiceImpl },
+        { K8SServiceImpl },
+        { K8sDevWorkspaceEnvVariables },
+        { K8sWorkspaceServiceImpl },
+        { GithubServiceImpl },
+        { K8sTelemetryServiceImpl },
+    ] = await Promise.all([
+        import('./impl/k8s-devfile-service-impl'),
+        import('./impl/k8s-service-impl'),
+        import('./impl/k8s-devworkspace-env-variables'),
+        import('./impl/k8s-workspace-service-impl'),
+        import('./impl/github-service-impl'),
+        import('./impl/k8s-telemetry-service-impl'),
+    ]);
 
     const container = new Container();
     container.bind(K8sDevfileServiceImpl).toSelf().inSingletonScope();
@@ -43,28 +50,23 @@ export async function activate(_extensionContext: vscode.ExtensionContext): Prom
     container.bind(K8SServiceImpl).toSelf().inSingletonScope();
     container.bind(K8SService).to(K8SServiceImpl).inSingletonScope();
     container.bind(K8sDevWorkspaceEnvVariables).toSelf().inSingletonScope();
-    container.bind(Symbol.for('AxiosInstance')).toConstantValue(axios);
     container.bind(GithubServiceImpl).toSelf().inSingletonScope();
     container.bind(GithubService).to(GithubServiceImpl).inSingletonScope();
     container.bind(TelemetryService).to(K8sTelemetryServiceImpl).inSingletonScope();
     container.bind(Logger).toSelf().inSingletonScope();
 
-    const devfileService = container.get(DevfileService) as DevfileService;
-    const workspaceService = container.get(WorkspaceService) as WorkspaceService;
-    const githubService = container.get(GithubService) as GithubService;
-    const telemetryService = container.get(TelemetryService) as TelemetryService;
     const api: Api = {
         getDevfileService(): DevfileService {
-            return devfileService;
+            return container.get(DevfileService) as DevfileService;
         },
         getWorkspaceService(): WorkspaceService {
-            return workspaceService;
+            return container.get(WorkspaceService) as WorkspaceService;
         },
         getGithubService(): GithubService {
-            return githubService;
+            return container.get(GithubService) as GithubService;
         },
         getTelemetryService(): TelemetryService {
-            return telemetryService;
+            return container.get(TelemetryService) as TelemetryService;
         },
     };
 
@@ -78,8 +80,6 @@ export async function activate(_extensionContext: vscode.ExtensionContext): Prom
     _extensionContext.environmentVariableCollection.replace('WORKSPACE_NAME', workspaceName);
     _extensionContext.environmentVariableCollection.replace('WORKSPACE_NAMESPACE', workspaceNamespace);
     _extensionContext.environmentVariableCollection.replace('PROJECTS_ROOT', projectsRoot);
-
-    await container.get(K8SServiceImpl).ensureKubernetesServiceHostWhitelisted();
 
     return api;
 }

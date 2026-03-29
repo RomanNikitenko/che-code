@@ -45,7 +45,6 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     vscode.authentication.registerAuthenticationProvider('github', 'GitHub', authenticationProvider);
 
     container.bind(DeviceAuthentication).toSelf().inSingletonScope();
-    container.get(DeviceAuthentication);
 }
 
 export function deactivate(): void {

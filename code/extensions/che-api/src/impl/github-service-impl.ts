@@ -10,8 +10,7 @@
 
 /* eslint-disable header/header */
 
-import * as k8s from '@kubernetes/client-node';
-import { AxiosInstance } from 'axios';
+import type { V1Secret } from '@kubernetes/client-node';
 import * as fs from 'fs-extra';
 import { inject, injectable } from 'inversify';
 import * as path from 'path';
@@ -36,13 +35,23 @@ const GIT_CREDENTIALS_LABEL_SELECTOR: string = createLabelsSelector(GIT_CREDENTI
 @injectable()
 export class GithubServiceImpl implements GithubService {
   private token: string | undefined;
+  private tokenInitializationPromise: Promise<void> | undefined;
 
   constructor(
     @inject(Logger) private logger: Logger,
-    @inject(K8SServiceImpl) private readonly k8sService: K8SServiceImpl,
-    @inject(Symbol.for('AxiosInstance')) private readonly axiosInstance: AxiosInstance
-  ) {
-    this.initializeToken();
+    @inject(K8SServiceImpl) private readonly k8sService: K8SServiceImpl
+  ) {}
+
+  private async ensureTokenInitialized(): Promise<void> {
+    if (this.token !== undefined) {
+      return;
+    }
+    if (!this.tokenInitializationPromise) {
+      this.tokenInitializationPromise = this.initializeToken().finally(() => {
+        this.tokenInitializationPromise = undefined;
+      });
+    }
+    await this.tokenInitializationPromise;
   }
 
   private checkToken(): void {
@@ -52,24 +61,40 @@ export class GithubServiceImpl implements GithubService {
   }
 
   async getToken(): Promise<string> {
+    await this.ensureTokenInitialized();
     this.checkToken();
     return this.token!;
   }
 
   async getUser(): Promise<GithubUser> {
+    await this.ensureTokenInitialized();
     this.checkToken();
-    const result = await this.axiosInstance.get<GithubUser>('https://api.github.com/user', {
-      headers: { Authorization: `Bearer ${this.token}` },
-    });
-    return result.data;
+    const result = await this.fetchGithubUser(this.token!);
+    return result.user;
   }
 
   async getTokenScopes(token: string): Promise<string[]> {
+    await this.ensureTokenInitialized();
     this.checkToken();
-    const result = await this.axiosInstance.get<GithubUser>('https://api.github.com/user', {
+    const result = await this.fetchGithubUser(token);
+    return result.scopes;
+  }
+
+  private async fetchGithubUser(token: string): Promise<{ user: GithubUser; scopes: string[] }> {
+    const response = await fetch('https://api.github.com/user', {
       headers: { Authorization: `Bearer ${token}` },
     });
-    return result.headers['x-oauth-scopes'].split(', ');
+    if (!response.ok) {
+      const message = await response.text();
+      throw new Error(`GitHub user request failed: ${response.status} ${response.statusText} - ${message}`);
+    }
+    const user = await response.json() as GithubUser;
+    const scopesHeader = response.headers.get('x-oauth-scopes') ?? '';
+    const scopes = scopesHeader
+      .split(', ')
+      .map(scope => scope.trim())
+      .filter(scope => scope.length > 0);
+    return { user, scopes };
   }
 
   async persistDeviceAuthToken(token: string): Promise<void> {
@@ -117,7 +142,8 @@ export class GithubServiceImpl implements GithubService {
     }
 
     // another token should be used by the Github Service after removing the Device Authentication token
-    this.initializeToken();
+    this.token = undefined;
+    await this.ensureTokenInitialized();
   }
 
   private async initializeToken(): Promise<void> {
@@ -192,7 +218,7 @@ export class GithubServiceImpl implements GithubService {
   }
 }
 
-function toDeviceAuthSecret(token: string, namespace: string): k8s.V1Secret {
+function toDeviceAuthSecret(token: string, namespace: string): V1Secret {
   return {
     apiVersion: 'v1',
     kind: 'Secret',

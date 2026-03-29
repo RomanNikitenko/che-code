@@ -13,10 +13,16 @@ https://github.com/che-incubator/che-code/pull/659
 - code/extensions/json-language-features/package.json
 - code/extensions/markdown-language-features/package.json
 - code/extensions/npm/package.json
-- code/test/mcp/package.json
 - code/test/automation/package.json
 - code/test/integration/browser/package.json
-- code/test/smoke/package.json
+---
+
+#### @sbouchet @RomanNikitenko
+https://github.com/che-incubator/che-code/pull/668 \
+https://github.com/che-incubator/che-code/commit/c1cb30760472ea262b0c59cacae32bb398a40cdd
+
+- code/package.json
+- code/remote/package.json
 ---
 
 #### @sbouchet
@@ -61,15 +67,18 @@ https://github.com/che-incubator/che-code/pull/655
 - code/src/vs/server/node/extensionHostConnection.ts
 ---
 
-#### @sbouchet
-https://github.com/che-incubator/che-code/pull/654
+#### @sbouchet @RomanNikitenko
+https://github.com/che-incubator/che-code/pull/654 \
+https://github.com/che-incubator/che-code/pull/646/changes/eebf4d4db208a1fc9c1ac056f613a5385471c892
 
 - code/test/mcp/package.json
 - code/package.json
+- code/build/package.json
 ---
 
-#### @sbouchet
-https://github.com/che-incubator/che-code/pull/648
+#### @sbouchet @RomanNikitenko
+https://github.com/che-incubator/che-code/pull/648 \
+https://github.com/che-incubator/che-code/pull/646/changes/c22ae74ef707862afdb29f9a9f343be912cb05f8
 
 - code/package.json
 - code/build/npm/gyp/package.json
@@ -122,12 +131,6 @@ https://github.com/che-incubator/che-code/pull/611
 
 - code/package.json
 - code/build/npm/gyp/package.json
----
-
-#### @sbouchet
-https://github.com/che-incubator/che-code/pull/607
-
-- code/extensions/vscode-api-tests/package.json
 ---
 
 #### @sbouchet
@@ -275,12 +278,6 @@ https://github.com/che-incubator/che-code/pull/482
 https://github.com/che-incubator/che-code/pull/476
 
 - code/extensions/package.json
----
-
-#### @RomanNikitenko
-https://github.com/che-incubator/che-code/pull/478
-
-- code/package.json
 ---
 
 #### @RomanNikitenko
