@@ -21,18 +21,28 @@ import * as vscode from 'vscode';
 import { Api } from './api/api';
 import { DevfileService } from './api/devfile-service';
 import { K8SService } from './api/k8s-service';
-import { K8sDevfileServiceImpl } from './impl/k8s-devfile-service-impl';
-import { K8SServiceImpl } from './impl/k8s-service-impl';
-import { K8sDevWorkspaceEnvVariables } from './impl/k8s-devworkspace-env-variables';
 import { WorkspaceService } from './api/workspace-service';
-import { K8sWorkspaceServiceImpl } from './impl/k8s-workspace-service-impl';
 import { GithubService } from './api/github-service';
-import { GithubServiceImpl } from './impl/github-service-impl';
 import { TelemetryService } from './api/telemetry-service';
-import { K8sTelemetryServiceImpl } from './impl/k8s-telemetry-service-impl';
 import { Logger } from './logger';
 
 export async function activate(_extensionContext: vscode.ExtensionContext): Promise<Api> {
+    const [
+        { K8sDevfileServiceImpl },
+        { K8SServiceImpl },
+        { K8sDevWorkspaceEnvVariables },
+        { K8sWorkspaceServiceImpl },
+        { GithubServiceImpl },
+        { K8sTelemetryServiceImpl },
+    ] = await Promise.all([
+        import('./impl/k8s-devfile-service-impl'),
+        import('./impl/k8s-service-impl'),
+        import('./impl/k8s-devworkspace-env-variables'),
+        import('./impl/k8s-workspace-service-impl'),
+        import('./impl/github-service-impl'),
+        import('./impl/k8s-telemetry-service-impl'),
+    ]);
+
     const container = new Container();
     container.bind(K8sDevfileServiceImpl).toSelf().inSingletonScope();
     container.bind(DevfileService).to(K8sDevfileServiceImpl).inSingletonScope();
