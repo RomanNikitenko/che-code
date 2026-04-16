@@ -503,6 +503,10 @@ resolve_conflicts() {
       apply_code_src_vs_code_browser_workbench_workbench_changes
     elif [[ "$conflictingFile" == "code/extensions/git/src/ssh-askpass.sh" ]]; then
       apply_code_extensions_git_src_ssh-askpass_changes
+    elif [[ "$conflictingFile" == "code/resources/server/bin/remote-cli/code-linux.sh" ]]; then
+      apply_changes "$conflictingFile"
+    elif [[ "$conflictingFile" == "code/resources/server/bin/helpers/browser-linux.sh" ]]; then
+      apply_changes "$conflictingFile"
     elif [[ "$conflictingFile" == "code/src/vs/base/common/product.ts" ]]; then
       apply_changes "$conflictingFile"
     elif [[ "$conflictingFile" == "code/src/vs/workbench/contrib/welcomeGettingStarted/browser/gettingStarted.ts" ]]; then
