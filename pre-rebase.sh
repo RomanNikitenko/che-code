@@ -74,9 +74,12 @@ set -e
 if [ $merge_exit -eq 0 ]; then
   echo "No conflicts detected! Rebase should be clean."
   git reset --hard HEAD~1
-  mkdir -p .rebase
-  cat > .rebase/pre-rebase-report.md << 'REPORT_EOF'
+  local_upstream_short=$(echo "$CURRENT_UPSTREAM_VERSION" | sed 's|release/||')
+  mkdir -p .rebase/reports
+  cat > ".rebase/reports/pre-rebase-report-${local_upstream_short}.md" << REPORT_EOF
 # Pre-Rebase Report
+
+> Previous: ${PREVIOUS_UPSTREAM_VERSION} -> Target: ${CURRENT_UPSTREAM_VERSION}
 > No conflicts detected. Rebase should be clean.
 REPORT_EOF
   exit 0
@@ -166,8 +169,9 @@ fi
 # ---------------------------------------------------------------------------
 # Generate report
 # ---------------------------------------------------------------------------
-mkdir -p .rebase
-REPORT=".rebase/pre-rebase-report.md"
+UPSTREAM_SHORT=$(echo "$CURRENT_UPSTREAM_VERSION" | sed 's|release/||')
+mkdir -p .rebase/reports
+REPORT=".rebase/reports/pre-rebase-report-${UPSTREAM_SHORT}.md"
 
 cat > "$REPORT" << HEADER_EOF
 # Pre-Rebase Report
@@ -175,7 +179,14 @@ cat > "$REPORT" << HEADER_EOF
 > Previous: ${PREVIOUS_UPSTREAM_VERSION} -> Target: ${CURRENT_UPSTREAM_VERSION}
 > Conflicts found: ${CONFLICT_COUNT}
 
+## All conflicting files (raw list)
+
 HEADER_EOF
+
+for f in $CONFLICTS; do
+  echo "- \`$f\`" >> "$REPORT"
+done
+echo "" >> "$REPORT"
 
 # RULED
 echo "## RULED - has rebase rules and elif entry (${#RULED_FILES[@]} files)" >> "$REPORT"
