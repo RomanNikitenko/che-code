@@ -47,16 +47,29 @@ echo "Target upstream SHA:   ${UPSTREAM_SHA}"
 echo ""
 
 # ---------------------------------------------------------------------------
-# Save current branch, create temp branch, set up cleanup trap
+# Save current branch, stash changes, create temp branch, set up cleanup trap
 # ---------------------------------------------------------------------------
 ORIGINAL_BRANCH=$(git branch --show-current 2>/dev/null || git rev-parse HEAD)
+STASH_NEEDED=false
+
+if ! git diff --quiet || ! git diff --cached --quiet; then
+  echo "Stashing uncommitted changes..."
+  git stash push -m "pre-rebase-check-stash" --include-untracked
+  STASH_NEEDED=true
+fi
 
 cleanup() {
   echo ""
   echo "Cleaning up trial merge..."
   git merge --abort 2>/dev/null || true
+  git reset --hard 2>/dev/null || true
+  git clean -fd code/ 2>/dev/null || true
   git checkout "$ORIGINAL_BRANCH" 2>/dev/null || true
   git branch -D _pre_rebase_check 2>/dev/null || true
+  if [ "$STASH_NEEDED" = true ]; then
+    echo "Restoring stashed changes..."
+    git stash pop 2>/dev/null || true
+  fi
 }
 trap cleanup EXIT
 
@@ -89,6 +102,32 @@ fi
 # Collect conflicting files
 # ---------------------------------------------------------------------------
 CONFLICTS=$(git diff --name-only --diff-filter=U)
+
+if [ -z "$CONFLICTS" ]; then
+  echo "git subtree pull failed (exit code $merge_exit) but no file-level conflicts found."
+  echo ""
+  echo "Merge output:"
+  echo "$merge_output"
+  echo ""
+  echo "This may indicate a subtree merge strategy issue. Try running rebase.sh directly."
+  UPSTREAM_SHORT=$(echo "$CURRENT_UPSTREAM_VERSION" | sed 's|release/||')
+  mkdir -p .rebase/reports
+  cat > ".rebase/reports/pre-rebase-report-${UPSTREAM_SHORT}.md" << REPORT_EOF
+# Pre-Rebase Report
+
+> Previous: ${PREVIOUS_UPSTREAM_VERSION} -> Target: ${CURRENT_UPSTREAM_VERSION}
+> git subtree pull failed (exit $merge_exit) but no file-level conflicts detected.
+> This may indicate a subtree merge strategy issue. Try running rebase.sh directly.
+
+## Merge output
+
+\`\`\`
+${merge_output}
+\`\`\`
+REPORT_EOF
+  exit 1
+fi
+
 CONFLICT_COUNT=$(echo "$CONFLICTS" | wc -l | tr -d ' ')
 
 echo "Found ${CONFLICT_COUNT} conflicting files"
