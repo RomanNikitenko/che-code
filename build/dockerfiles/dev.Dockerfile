@@ -1,4 +1,4 @@
-# Copyright (c) 2022 Red Hat, Inc.
+# Copyright (c) 2022-2026 Red Hat, Inc.
 # This program and the accompanying materials are made
 # available under the terms of the Eclipse Public License 2.0
 # which is available at https://www.eclipse.org/legal/epl-2.0/
@@ -10,13 +10,36 @@ FROM quay.io/devfile/universal-developer-image:latest
 
 USER 0
 
-RUN dnf -y install libsecret libX11-devel libxkbcommon \
+RUN dnf -y install patch libsecret libX11-devel libxkbcommon \
     "https://rpmfind.net/linux/centos-stream/9-stream/AppStream/x86_64/os/Packages/libsecret-devel-0.20.4-4.el9.x86_64.rpm" \
     "https://rpmfind.net/linux/centos-stream/9-stream/AppStream/x86_64/os/Packages/libxkbfile-1.1.0-8.el9.x86_64.rpm" \
     "https://rpmfind.net/linux/centos-stream/9-stream/CRB/x86_64/os/Packages/libxkbfile-devel-1.1.0-8.el9.x86_64.rpm" \
     "https://rpmfind.net/linux/centos-stream/9-stream/BaseOS/x86_64/os/Packages/zsh-5.8-9.el9.x86_64.rpm" \
     util-linux-user && \
     dnf -y clean all --enablerepo='*'
+
+# Pin gcloud CLI to a tested release from the official RHEL/CentOS repository.
+# See https://cloud.google.com/sdk/docs/release-notes for recent versions.
+ARG GCLOUD_CLI_VERSION=563.0.0
+RUN printf '%s\n' \
+    '[google-cloud-cli]' \
+    'name=Google Cloud CLI' \
+    'baseurl=https://packages.cloud.google.com/yum/repos/cloud-sdk-el9-x86_64' \
+    'enabled=1' \
+    'gpgcheck=1' \
+    'repo_gpgcheck=0' \
+    'gpgkey=https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg' \
+    > /etc/yum.repos.d/google-cloud-sdk.repo && \
+    dnf makecache --repo=google-cloud-cli && \
+    dnf list --showduplicates google-cloud-cli 2>/dev/null \
+        | grep -q "${GCLOUD_CLI_VERSION}" || \
+    { echo "ERROR: google-cloud-cli version ${GCLOUD_CLI_VERSION} not found in repo."; \
+      echo "Available versions (most recent last):"; \
+      dnf list --showduplicates google-cloud-cli 2>/dev/null | tail -10; \
+      exit 1; } && \
+    dnf -y install libxcrypt-compat google-cloud-cli-${GCLOUD_CLI_VERSION} && \
+    dnf -y clean all --enablerepo='*' && \
+    gcloud --version
 
 COPY --chmod=664 /build/conf/dev/.p10k.zsh /home/user/.p10k.zsh
 
@@ -34,7 +57,7 @@ ENV ZSH_DISABLE_COMPFIX="true"
 
 USER 10001
 
-ENV NODEJS_VERSION=22.19.0
+ENV NODEJS_VERSION=22.22.0
 
 ENV ELECTRON_SKIP_BINARY_DOWNLOAD=1 \
     PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=0 \
@@ -46,7 +69,7 @@ RUN source $NVM_DIR/nvm.sh && \
     nvm use v$NODEJS_VERSION
 
 USER 0
-RUN npm install --global npm@9.7.2 node-gyp@9
+RUN npm install --global npm@10.9.3 node-gyp@11
 
 # Set permissions on /home/user/.cache to allow the user to write
 RUN chgrp -R 0 /home/user/.cache && chmod -R g=u /home/user/.cache
