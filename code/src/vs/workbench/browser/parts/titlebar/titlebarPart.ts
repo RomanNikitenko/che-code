@@ -582,6 +582,8 @@ export class BrowserTitlebarPart extends Part implements ITitlebarPart {
 
 		const isShowingTitleInNativeTitlebar = hasNativeTitlebar(this.configurationService, this.titleBarStyle);
 
+		console.log(`[window.header] createTitle() isCommandCenterVisible=${this.isCommandCenterVisible}, isShowingTitleInNativeTitlebar=${isShowingTitleInNativeTitlebar}`);
+
 		// Text Title
 		if (!this.isCommandCenterVisible) {
 			if (!isShowingTitleInNativeTitlebar) {

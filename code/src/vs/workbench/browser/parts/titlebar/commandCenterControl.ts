@@ -217,6 +217,7 @@ class CommandCenterCenterViewItem extends BaseActionViewItem {
 							const { prefix, suffix } = that._windowTitle.getTitleDecorations();
 							let label = that._windowTitle.workspaceName;
 							const header = that._windowTitle.getHeader();
+							console.log(`[window.header] commandCenter._getLabel() header=${JSON.stringify(header)}, workspaceName=${JSON.stringify(label)}`);
 							if (header) {
 								label = header;
 							} else if (that._windowTitle.isCustomTitleFormat()) {
