@@ -62,8 +62,13 @@ jobs:
 
       - name: Login to OpenShift
         run: |
+          echo "::add-mask::${{ secrets.OC_SERVER }}"
+          echo "::add-mask::${{ secrets.OC_PROJECT }}"
           oc login --token=${{ secrets.OC_TOKEN }} \
-                   --server=${{ secrets.OC_SERVER }}
+                   --server=${{ secrets.OC_SERVER }} > /dev/null
+
+      - name: Select OpenShift project
+        run: oc project ${{ secrets.OC_PROJECT }} > /dev/null
 
       - name: Run dw-claude-runner
         working-directory: dw-claude-runner
@@ -79,6 +84,9 @@ jobs:
         id: extract-pr
         run: |
           PR_URL=$(grep -oE 'https://github.com/[^/]+/[^/]+/pull/[0-9]+' /tmp/runner-output.txt | tail -1 || true)
+          if [ -z "$PR_URL" ]; then
+            echo "::warning::Skill succeeded but no PR URL found in output"
+          fi
           echo "pr_url=${PR_URL}" >> "$GITHUB_OUTPUT"
 
       - name: Comment success on issue
