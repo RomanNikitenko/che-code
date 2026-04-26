@@ -77,7 +77,9 @@ jobs:
           TARGET_REPO: ${{ github.repository }}
           SKILL_SOURCE: target_project
           SKILL_PATH: .claude/skills/test-pr.md
-        run: ./run.sh -v 2>&1 | tee /tmp/runner-output.txt
+        run: |
+          set -o pipefail
+          ./run.sh -v 2>&1 | tee /tmp/runner-output.txt
 
       - name: Extract PR URL
         if: success()
@@ -95,9 +97,10 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_URL: ${{ steps.extract-pr.outputs.pr_url }}
         run: |
-          BODY="Rebase workflow **succeeded**. [View run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})"
           if [ -n "$PR_URL" ]; then
-            BODY="${BODY}\n\nCreated PR: ${PR_URL}"
+            BODY="Rebase workflow **succeeded**. [View run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})\n\nCreated PR: ${PR_URL}"
+          else
+            BODY="**Warning**: Workflow completed but no PR was created. Something may have gone wrong. [View logs](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})"
           fi
           gh issue comment "${{ github.event.issue.number }}" \
             --repo "${{ github.repository }}" \
