@@ -1,0 +1,105 @@
+#
+# Copyright (c) 2026 Red Hat, Inc.
+# This program and the accompanying materials are made
+# available under the terms of the Eclipse Public License 2.0
+# which is available at https://www.eclipse.org/legal/epl-2.0/
+#
+# SPDX-License-Identifier: EPL-2.0
+#
+
+#
+# This file was generated using AI assistance (Cursor AI)
+# and reviewed by the maintainers.
+#
+
+name: Trigger Rebase via dw-claude-runner
+
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  trigger-rebase:
+    if: >-
+      !github.event.issue.pull_request
+      && contains(github.event.issue.title, 'Alignment Che-Code with')
+      && contains(github.event.comment.body, '/rebase')
+    runs-on: ubuntu-22.04
+    permissions:
+      issues: write
+
+    steps:
+      - name: Check author permission
+        id: permission
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PERM=$(gh api "repos/${{ github.repository }}/collaborators/${{ github.event.comment.user.login }}/permission" \
+            --jq '.permission')
+          echo "permission=$PERM"
+          if [[ "$PERM" != "admin" && "$PERM" != "write" ]]; then
+            echo "User ${{ github.event.comment.user.login }} does not have write access (permission: $PERM)"
+            exit 1
+          fi
+
+      - name: Add reaction to comment
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh api "repos/${{ github.repository }}/issues/comments/${{ github.event.comment.id }}/reactions" \
+            -f content='rocket' --silent
+
+      - name: Checkout dw-claude-runner
+        uses: actions/checkout@v4
+        with:
+          repository: RomanNikitenko/dw-claude-runner
+          path: dw-claude-runner
+
+      - name: Install oc CLI
+        uses: redhat-actions/openshift-tools-installer@v1
+        with:
+          oc: latest
+
+      - name: Login to OpenShift
+        run: |
+          oc login --token=${{ secrets.OC_TOKEN }} \
+                   --server=${{ secrets.OC_SERVER }}
+
+      - name: Run dw-claude-runner
+        working-directory: dw-claude-runner
+        env:
+          PROJECT_URL: '"https://github.com/${{ github.repository }}.git"'
+          TARGET_REPO: ${{ github.repository }}
+          SKILL_SOURCE: target_project
+          SKILL_PATH: .claude/skills/test-pr.md
+        run: ./run.sh -v 2>&1 | tee /tmp/runner-output.txt
+
+      - name: Extract PR URL
+        if: success()
+        id: extract-pr
+        run: |
+          PR_URL=$(grep -oE 'https://github.com/[^/]+/[^/]+/pull/[0-9]+' /tmp/runner-output.txt | tail -1 || true)
+          echo "pr_url=${PR_URL}" >> "$GITHUB_OUTPUT"
+
+      - name: Comment success on issue
+        if: success()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_URL: ${{ steps.extract-pr.outputs.pr_url }}
+        run: |
+          BODY="Rebase workflow **succeeded**. [View run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+          if [ -n "$PR_URL" ]; then
+            BODY="${BODY}\n\nCreated PR: ${PR_URL}"
+          fi
+          gh issue comment "${{ github.event.issue.number }}" \
+            --repo "${{ github.repository }}" \
+            --body "$(echo -e "$BODY")"
+
+      - name: Comment failure on issue
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue comment "${{ github.event.issue.number }}" \
+            --repo "${{ github.repository }}" \
+            --body "Rebase workflow **failed**. [View run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})"
