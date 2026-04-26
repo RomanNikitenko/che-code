@@ -36,7 +36,10 @@ Verify that the che-code-rebase-bot pipeline works end-to-end by making a trivia
    gh pr create \
      --repo TARGET_REPO \
      --title "[rebase-bot]: test pipeline verification" \
-     --body "Automated test PR created by che-code-rebase-bot to verify the pipeline works end-to-end. Safe to close."
+     --body "Automated test PR created by che-code-rebase-bot to verify the pipeline works end-to-end. Safe to close.
+
+### What issues does this PR fix?
+ISSUE_REF"
    ```
 
 6. **Print the result**: output the PR URL so the orchestrator can capture it.
