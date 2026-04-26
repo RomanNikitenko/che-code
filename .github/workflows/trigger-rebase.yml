@@ -49,6 +49,17 @@ jobs:
           gh api "repos/${{ github.repository }}/issues/comments/${{ github.event.comment.id }}/reactions" \
             -f content='rocket' --silent
 
+      - name: Post in-progress comment
+        id: progress-comment
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          COMMENT_URL=$(gh issue comment "${{ github.event.issue.number }}" \
+            --repo "${{ github.repository }}" \
+            --body "Rebase workflow **in progress**... [View run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})")
+          COMMENT_ID=$(echo "$COMMENT_URL" | grep -oE '[0-9]+$')
+          echo "comment_id=${COMMENT_ID}" >> "$GITHUB_OUTPUT"
+
       - name: Checkout dw-claude-runner
         uses: actions/checkout@v4
         with:
@@ -91,26 +102,20 @@ jobs:
           fi
           echo "pr_url=${PR_URL}" >> "$GITHUB_OUTPUT"
 
-      - name: Comment success on issue
-        if: success()
+      - name: Update comment with result
+        if: always() && steps.progress-comment.outputs.comment_id
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_URL: ${{ steps.extract-pr.outputs.pr_url }}
+          COMMENT_ID: ${{ steps.progress-comment.outputs.comment_id }}
+          RUN_URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
-          if [ -n "$PR_URL" ]; then
-            BODY="Rebase workflow **succeeded**. [View run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})\n\nCreated PR: ${PR_URL}"
+          if [ "${{ job.status }}" = "success" ] && [ -n "$PR_URL" ]; then
+            BODY="Rebase workflow **succeeded**. [View run](${RUN_URL})\n\nCreated PR: ${PR_URL}"
+          elif [ "${{ job.status }}" = "success" ]; then
+            BODY="**Warning**: Workflow completed but no PR was created. Something may have gone wrong. [View logs](${RUN_URL})"
           else
-            BODY="**Warning**: Workflow completed but no PR was created. Something may have gone wrong. [View logs](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+            BODY="Rebase workflow **failed**. [View run](${RUN_URL})"
           fi
-          gh issue comment "${{ github.event.issue.number }}" \
-            --repo "${{ github.repository }}" \
-            --body "$(echo -e "$BODY")"
-
-      - name: Comment failure on issue
-        if: failure()
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh issue comment "${{ github.event.issue.number }}" \
-            --repo "${{ github.repository }}" \
-            --body "Rebase workflow **failed**. [View run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+          gh api "repos/${{ github.repository }}/issues/comments/${COMMENT_ID}" \
+            -X PATCH -f body="$(echo -e "$BODY")"
