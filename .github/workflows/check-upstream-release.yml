@@ -1,0 +1,116 @@
+#
+# Copyright (c) 2026 Red Hat, Inc.
+# This program and the accompanying materials are made
+# available under the terms of the Eclipse Public License 2.0
+# which is available at https://www.eclipse.org/legal/epl-2.0/
+#
+# SPDX-License-Identifier: EPL-2.0
+#
+
+#
+# This file was generated using AI assistance (Cursor AI)
+# and reviewed by the maintainers.
+#
+
+name: Check Upstream VS Code Release
+
+on:
+  schedule:
+    - cron: '0 8 * * 1-5'
+  workflow_dispatch:
+
+jobs:
+  check-upstream:
+    runs-on: ubuntu-22.04
+    permissions:
+      issues: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Get current upstream version from rebase.sh
+        id: current
+        run: |
+          CURRENT=$(grep '^CURRENT_UPSTREAM_VERSION=' rebase.sh | sed 's/CURRENT_UPSTREAM_VERSION="//' | sed 's/"//')
+          echo "version=$CURRENT" >> "$GITHUB_OUTPUT"
+          echo "Current upstream version: $CURRENT"
+
+      - name: Check for newer VS Code release branches
+        id: check
+        run: |
+          CURRENT="${{ steps.current.outputs.version }}"
+          CURRENT_MINOR=$(echo "$CURRENT" | grep -oP '\d+\.\d+' | cut -d. -f2)
+          echo "Current minor version: $CURRENT_MINOR"
+
+          LATEST_MINOR="$CURRENT_MINOR"
+          LATEST_BRANCH=""
+
+          for i in $(seq 1 10); do
+            CHECK_MINOR=$((CURRENT_MINOR + i))
+            BRANCH="release/1.${CHECK_MINOR}"
+            if git ls-remote --heads https://github.com/microsoft/vscode.git "$BRANCH" | grep -q "$BRANCH"; then
+              echo "Found branch: $BRANCH"
+              LATEST_MINOR="$CHECK_MINOR"
+              LATEST_BRANCH="$BRANCH"
+            else
+              break
+            fi
+          done
+
+          if [ -n "$LATEST_BRANCH" ]; then
+            echo "new_release=true" >> "$GITHUB_OUTPUT"
+            echo "latest_branch=$LATEST_BRANCH" >> "$GITHUB_OUTPUT"
+            echo "New release branch found: $LATEST_BRANCH"
+          else
+            echo "new_release=false" >> "$GITHUB_OUTPUT"
+            echo "No new release branch found"
+          fi
+
+      - name: Check if issue already exists
+        if: steps.check.outputs.new_release == 'true'
+        id: existing
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          LATEST="${{ steps.check.outputs.latest_branch }}"
+          VERSION=$(echo "$LATEST" | sed 's|release/||')
+
+          EXISTING=$(gh issue list \
+            --repo "${{ github.repository }}" \
+            --search "Alignment Che-Code with ${VERSION}" \
+            --state open \
+            --json number \
+            --jq 'length')
+
+          if [ "$EXISTING" -gt 0 ]; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "Issue already exists, skipping creation"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create issue
+        if: steps.check.outputs.new_release == 'true' && steps.existing.outputs.exists == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          LATEST_BRANCH: ${{ steps.check.outputs.latest_branch }}
+        run: |
+          VERSION=$(echo "$LATEST_BRANCH" | sed 's|release/||')
+
+          cat > /tmp/issue-body.md <<EOF
+          ### Is your task related to a problem? Please describe
+
+          Alignment Che-Code with \`${VERSION}.x\` version of VS Code
+
+          ### Describe the solution you'd like
+
+          Fix the incompatibility with the upstream.
+
+          ### Additional context
+          EOF
+
+          gh issue create \
+            --repo "${{ github.repository }}" \
+            --title "Alignment Che-Code with ${VERSION}.x version of VS Code" \
+            --body-file /tmp/issue-body.md
