@@ -1,0 +1,104 @@
+#
+# Copyright (c) 2026 Red Hat, Inc.
+# This program and the accompanying materials are made
+# available under the terms of the Eclipse Public License 2.0
+# which is available at https://www.eclipse.org/legal/epl-2.0/
+#
+# SPDX-License-Identifier: EPL-2.0
+#
+
+#
+# This file was generated using AI assistance (Cursor AI)
+# and reviewed by the maintainers.
+#
+
+name: Auto-trigger Rebase on Issue Creation
+
+on:
+  issues:
+    types: [opened]
+
+jobs:
+  trigger-rebase:
+    if: contains(github.event.issue.title, 'Alignment Che-Code with')
+    runs-on: ubuntu-22.04
+    permissions:
+      issues: write
+
+    steps:
+      - name: Add reaction to issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh api "repos/${{ github.repository }}/issues/${{ github.event.issue.number }}/reactions" \
+            -f content='rocket' --silent
+
+      - name: Post in-progress comment
+        id: progress-comment
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          COMMENT_URL=$(gh issue comment "${{ github.event.issue.number }}" \
+            --repo "${{ github.repository }}" \
+            --body "Rebase workflow **in progress**... [View run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})")
+          COMMENT_ID=$(echo "$COMMENT_URL" | grep -oE '[0-9]+$')
+          echo "comment_id=${COMMENT_ID}" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout dw-claude-runner
+        uses: actions/checkout@v4
+        with:
+          repository: RomanNikitenko/dw-claude-runner
+          path: dw-claude-runner
+
+      - name: Install oc CLI
+        uses: redhat-actions/openshift-tools-installer@v1
+        with:
+          oc: latest
+
+      - name: Login to OpenShift
+        run: |
+          echo "::add-mask::${{ secrets.OC_SERVER }}"
+          echo "::add-mask::${{ secrets.OC_PROJECT }}"
+          oc login --token=${{ secrets.OC_TOKEN }} \
+                   --server=${{ secrets.OC_SERVER }} > /dev/null
+
+      - name: Select OpenShift project
+        run: oc project ${{ secrets.OC_PROJECT }} > /dev/null
+
+      - name: Run dw-claude-runner
+        working-directory: dw-claude-runner
+        env:
+          PROJECT_URL: '"https://github.com/${{ github.repository }}.git"'
+          TARGET_REPO: ${{ github.repository }}
+          ISSUE_REF: "https://github.com/${{ github.repository }}/issues/${{ github.event.issue.number }}"
+        run: |
+          set -o pipefail
+          ./run.sh -v 2>&1 | tee /tmp/runner-output.txt
+
+      - name: Extract PR URL
+        if: success()
+        id: extract-pr
+        run: |
+          PR_URL=$(grep -oE 'https://github.com/[^/]+/[^/]+/pull/[0-9]+' /tmp/runner-output.txt | tail -1 || true)
+          if [ -z "$PR_URL" ]; then
+            echo "::warning::Skill succeeded but no PR URL found in output"
+          fi
+          echo "pr_url=${PR_URL}" >> "$GITHUB_OUTPUT"
+
+      - name: Update comment with result
+        if: always() && steps.progress-comment.outputs.comment_id
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_URL: ${{ steps.extract-pr.outputs.pr_url }}
+          COMMENT_ID: ${{ steps.progress-comment.outputs.comment_id }}
+          RUN_URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          if [ "${{ job.status }}" = "success" ] && [ -n "$PR_URL" ]; then
+            BODY="Rebase workflow **succeeded**. [View run](${RUN_URL})\n\nCreated PR: ${PR_URL}"
+          elif [ "${{ job.status }}" = "success" ]; then
+            BODY="**Warning**: Workflow completed but no PR was created. Something may have gone wrong. [View logs](${RUN_URL})"
+          else
+            BODY="Rebase workflow **failed**. [View run](${RUN_URL})"
+          fi
+          gh api "repos/${{ github.repository }}/issues/comments/${COMMENT_ID}" \
+            -X PATCH -f body="$(echo -e "$BODY")"

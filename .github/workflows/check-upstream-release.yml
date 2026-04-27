@@ -73,19 +73,16 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          LATEST="${{ steps.check.outputs.latest_branch }}"
-          VERSION=$(echo "$LATEST" | sed 's|release/||')
-
           EXISTING=$(gh issue list \
             --repo "${{ github.repository }}" \
-            --search "Alignment Che-Code with ${VERSION}" \
+            --search "Alignment Che-Code with" \
             --state open \
             --json number \
             --jq 'length')
 
           if [ "$EXISTING" -gt 0 ]; then
             echo "exists=true" >> "$GITHUB_OUTPUT"
-            echo "Issue already exists, skipping creation"
+            echo "An alignment issue already exists, skipping creation"
           else
             echo "exists=false" >> "$GITHUB_OUTPUT"
           fi
