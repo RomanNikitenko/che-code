@@ -71,6 +71,7 @@ jobs:
           PROJECT_URL: '"https://github.com/${{ github.repository }}.git"'
           TARGET_REPO: ${{ github.repository }}
           ISSUE_REF: "https://github.com/${{ github.repository }}/issues/${{ github.event.issue.number }}"
+          CONTAINER_IMAGE: quay.io/che-incubator/che-code-dev:insiders
           TIMEOUT: "600"
           CLAUDE_TIMEOUT: "7200"
         run: |
