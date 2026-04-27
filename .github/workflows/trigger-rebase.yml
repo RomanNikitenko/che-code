@@ -87,6 +87,8 @@ jobs:
           PROJECT_URL: '"https://github.com/${{ github.repository }}.git"'
           TARGET_REPO: ${{ github.repository }}
           ISSUE_REF: "https://github.com/${{ github.repository }}/issues/${{ github.event.issue.number }}"
+          TIMEOUT: "600"
+          CLAUDE_TIMEOUT: "7200"
         run: |
           set -o pipefail
           ./run.sh -v 2>&1 | tee /tmp/runner-output.txt
