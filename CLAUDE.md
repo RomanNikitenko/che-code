@@ -2,6 +2,21 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Issue Resolution (READ FIRST)
+
+**IMPORTANT**: When you receive a GitHub issue reference (as a prompt or URL), you MUST follow this procedure BEFORE doing anything else. Do NOT explore the repository, analyze code, or take any other action until you have completed steps 1-3.
+
+1. Fetch the issue details (title, body) using `gh issue view <URL>`.
+2. Match the issue title against the routing table below.
+3. If a skill matches, read that skill file and follow its instructions exactly as written. Do not skip steps or improvise alternatives.
+4. If no skill matches the issue title, report: "No matching skill for this issue title: \<title\>" and exit with a non-zero code.
+
+### Routing Table
+
+| Issue title pattern | Skill file |
+|---|---|
+| "Alignment Che-Code with" | `.claude/skills/test-pr.md` |
+
 ## Project Overview
 
 **che-code** is Eclipse Che's fork of Microsoft's VS Code (Code-OSS) that runs in a browser, connecting to a remote HTTP(s) server on Kubernetes instead of desktop mode. The terminal is container-aware: it can open shells in any container of the running pod.
@@ -140,18 +155,3 @@ Settings used by automated skills (`.claude/skills/`):
 
 - **PR target repository**: `RomanNikitenko/che-code`
 - **Git identity**: name `che-code-rebase-bot`, email `che-code-rebase-bot@noreply`
-
-## Issue Resolution
-
-When you receive a GitHub issue reference (either as a prompt like "Resolve this GitHub issue: \<URL\>" or just an issue URL), follow these rules:
-
-1. Fetch the issue details (title, body) using `gh issue view <URL>`.
-2. Match the issue title against the routing table below.
-3. Read the matched skill file and follow its instructions exactly as written. Do not skip steps or improvise alternatives.
-4. If no skill matches the issue title, report: "No matching skill for this issue title: \<title\>" and exit with a non-zero code.
-
-### Routing Table
-
-| Issue title pattern | Skill file |
-|---|---|
-| "Alignment Che-Code with" | `.claude/skills/test-pr.md` |
