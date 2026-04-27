@@ -31,10 +31,11 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Fetch upstream remote
+      - name: Fetch upstream for rule validation
         run: |
+          UPSTREAM_VERSION=$(grep '^CURRENT_UPSTREAM_VERSION=' rebase.sh | head -1 | sed 's/.*="\(.*\)"/\1/')
           git remote add upstream-code https://github.com/microsoft/vscode || true
-          git fetch upstream-code --no-tags --depth=1
+          git fetch upstream-code "$UPSTREAM_VERSION" --no-tags --depth=1
 
       - name: Run rebase rules check
         id: check
