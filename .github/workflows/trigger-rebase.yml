@@ -18,10 +18,6 @@ on:
   issue_comment:
     types: [created]
 
-# Where the PR should be created (upstream repo)
-env:
-  PR_TARGET_REPO: RomanNikitenko/che-code
-
 jobs:
   trigger-rebase:
     if: >-
@@ -89,10 +85,8 @@ jobs:
         working-directory: dw-claude-runner
         env:
           PROJECT_URL: '"https://github.com/${{ github.repository }}.git"'
-          TARGET_REPO: ${{ env.PR_TARGET_REPO }}
+          TARGET_REPO: ${{ github.repository }}
           ISSUE_REF: "https://github.com/${{ github.repository }}/issues/${{ github.event.issue.number }}"
-          SKILL_SOURCE: target_project
-          SKILL_PATH: .claude/skills/test-pr.md
         run: |
           set -o pipefail
           ./run.sh -v 2>&1 | tee /tmp/runner-output.txt

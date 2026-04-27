@@ -1,6 +1,6 @@
 # Skill: Test PR
 
-You are working inside a project repository at /projects/che-code.
+You are working inside a project repository. Read `CLAUDE.md` at the repo root for the PR target repository and git identity configuration.
 
 ## Goal
 
@@ -8,11 +8,7 @@ Verify that the che-code-rebase-bot pipeline works end-to-end by making a trivia
 
 ## Steps
 
-1. **Configure git identity** (if not already set):
-   ```bash
-   git config user.name "che-code-rebase-bot"
-   git config user.email "che-code-rebase-bot@noreply"
-   ```
+1. **Configure git identity** using the values from the Automation Configuration section in `CLAUDE.md`.
 
 2. **Create a new branch**:
    ```bash
@@ -31,15 +27,15 @@ Verify that the che-code-rebase-bot pipeline works end-to-end by making a trivia
    git push origin HEAD
    ```
 
-5. **Create a pull request**:
+5. **Create a pull request** against the PR target repository from `CLAUDE.md`. Include the issue URL (from the prompt that triggered this skill) in the body:
    ```bash
    gh pr create \
-     --repo TARGET_REPO \
+     --repo <PR target repository from CLAUDE.md> \
      --title "[rebase-bot]: test pipeline verification" \
      --body "Automated test PR created by che-code-rebase-bot to verify the pipeline works end-to-end. Safe to close.
 
 ### What issues does this PR fix?
-ISSUE_REF"
+<issue URL from the triggering prompt>"
    ```
 
 6. **Print the result**: output the PR URL so the orchestrator can capture it.

@@ -133,3 +133,25 @@ The final image is assembled from three platform-specific builds:
 - **linux-libc-ubi9** — Red Hat UBI 9
 
 The `assembly.Dockerfile` combines all three into a single image that selects the right binary at runtime.
+
+## Automation Configuration
+
+Settings used by automated skills (`.claude/skills/`):
+
+- **PR target repository**: `RomanNikitenko/che-code`
+- **Git identity**: name `che-code-rebase-bot`, email `che-code-rebase-bot@noreply`
+
+## Issue Resolution
+
+When you receive a GitHub issue reference (either as a prompt like "Resolve this GitHub issue: \<URL\>" or just an issue URL), follow these rules:
+
+1. Fetch the issue details (title, body) using `gh issue view <URL>`.
+2. Match the issue title against the routing table below.
+3. Read the matched skill file and follow its instructions exactly as written. Do not skip steps or improvise alternatives.
+4. If no skill matches the issue title, report: "No matching skill for this issue title: \<title\>" and exit with a non-zero code.
+
+### Routing Table
+
+| Issue title pattern | Skill file |
+|---|---|
+| "Alignment Che-Code with" | `.claude/skills/test-pr.md` |
