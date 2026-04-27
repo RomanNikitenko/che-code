@@ -36,37 +36,27 @@ jobs:
           echo "version=$CURRENT" >> "$GITHUB_OUTPUT"
           echo "Current upstream version: $CURRENT"
 
-      - name: Check for newer VS Code release branches
+      - name: Check for next VS Code release branch
         id: check
         run: |
           CURRENT="${{ steps.current.outputs.version }}"
           CURRENT_MINOR=$(echo "$CURRENT" | grep -oP '\d+\.\d+' | cut -d. -f2)
-          echo "Current minor version: $CURRENT_MINOR"
+          NEXT_MINOR=$((CURRENT_MINOR + 1))
+          BRANCH="release/1.${NEXT_MINOR}"
+          echo "Current minor: $CURRENT_MINOR, checking next: $BRANCH"
 
-          LATEST_MINOR="$CURRENT_MINOR"
-          LATEST_BRANCH=""
-
-          for i in $(seq 1 10); do
-            CHECK_MINOR=$((CURRENT_MINOR + i))
-            BRANCH="release/1.${CHECK_MINOR}"
-            if git ls-remote --heads https://github.com/microsoft/vscode.git "$BRANCH" | grep -q "$BRANCH"; then
-              echo "Found branch: $BRANCH"
-              LATEST_MINOR="$CHECK_MINOR"
-              LATEST_BRANCH="$BRANCH"
-            else
-              break
-            fi
-          done
-
-          if [ -n "$LATEST_BRANCH" ]; then
+          if git ls-remote --heads https://github.com/microsoft/vscode.git "$BRANCH" | grep -q "$BRANCH"; then
             echo "new_release=true" >> "$GITHUB_OUTPUT"
-            echo "latest_branch=$LATEST_BRANCH" >> "$GITHUB_OUTPUT"
-            echo "New release branch found: $LATEST_BRANCH"
+            echo "next_branch=$BRANCH" >> "$GITHUB_OUTPUT"
+            echo "Next release branch found: $BRANCH"
           else
             echo "new_release=false" >> "$GITHUB_OUTPUT"
-            echo "No new release branch found"
+            echo "No next release branch found"
           fi
 
+      # Only check open issues so closed ones don't block new issue creation.
+      # TODO: once the automation pipeline is stable, consider also checking
+      # closed issues to avoid duplicates for the same version.
       - name: Check if issue already exists
         if: steps.check.outputs.new_release == 'true'
         id: existing
@@ -82,7 +72,7 @@ jobs:
 
           if [ "$EXISTING" -gt 0 ]; then
             echo "exists=true" >> "$GITHUB_OUTPUT"
-            echo "An alignment issue already exists, skipping creation"
+            echo "An open alignment issue already exists, skipping creation"
           else
             echo "exists=false" >> "$GITHUB_OUTPUT"
           fi
@@ -91,9 +81,9 @@ jobs:
         if: steps.check.outputs.new_release == 'true' && steps.existing.outputs.exists == 'false'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          LATEST_BRANCH: ${{ steps.check.outputs.latest_branch }}
+          NEXT_BRANCH: ${{ steps.check.outputs.next_branch }}
         run: |
-          VERSION=$(echo "$LATEST_BRANCH" | sed 's|release/||')
+          VERSION=$(echo "$NEXT_BRANCH" | sed 's|release/||')
 
           cat > /tmp/issue-body.md <<EOF
           ### Is your task related to a problem? Please describe
