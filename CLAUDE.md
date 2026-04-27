@@ -2,20 +2,21 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Issue Resolution (READ FIRST)
+## Task Resolution (READ FIRST)
 
-**IMPORTANT**: When you receive a GitHub issue reference (as a prompt or URL), you MUST follow this procedure BEFORE doing anything else. Do NOT explore the repository, analyze code, or take any other action until you have completed steps 1-3.
+**IMPORTANT**: When you receive a GitHub issue reference, a URL, or a direct prompt, you MUST follow this procedure BEFORE doing anything else. Do NOT explore the repository, analyze code, or take any other action until you have completed steps 1-4.
 
-1. Fetch the issue details (title, body) using `gh issue view <URL>`.
-2. Match the issue title against the routing table below.
+1. If the input is a GitHub issue URL, fetch the issue details (title, body) using `gh issue view <URL>`. Otherwise, use the prompt text directly.
+2. Match the issue title or prompt text against the routing table below.
 3. If a skill matches, read that skill file and follow its instructions exactly as written. Do not skip steps or improvise alternatives.
-4. If no skill matches the issue title, report: "No matching skill for this issue title: \<title\>" and exit with a non-zero code.
+4. If no skill matches, report: "No matching skill for this input: \<title or prompt\>" and exit with a non-zero code.
 
 ### Routing Table
 
-| Issue title pattern | Skill file |
+| Input pattern | Skill file |
 |---|---|
 | "Alignment Che-Code with" | `.claude/skills/rebase/SKILL.md` |
+| "add-rebase-rules" | `.claude/skills/add-rebase-rules/SKILL.md` |
 
 ## Project Overview
 

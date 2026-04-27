@@ -1,0 +1,83 @@
+#
+# Copyright (c) 2026 Red Hat, Inc.
+# This program and the accompanying materials are made
+# available under the terms of the Eclipse Public License 2.0
+# which is available at https://www.eclipse.org/legal/epl-2.0/
+#
+# SPDX-License-Identifier: EPL-2.0
+#
+
+#
+# This file was generated using AI assistance (Cursor AI)
+# and reviewed by the maintainers.
+#
+
+name: Check Rebase Rules
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+
+jobs:
+  check-rebase-rules:
+    runs-on: ubuntu-22.04
+    permissions:
+      pull-requests: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fetch upstream remote
+        run: |
+          git remote add upstream-code https://github.com/microsoft/vscode || true
+          git fetch upstream-code --no-tags --depth=1
+
+      - name: Run rebase rules check
+        id: check
+        run: |
+          RANGE="${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}"
+          COMMENT_BODY=$(bash .github/scripts/check-unprotected-changes.sh --pr-comment "$RANGE" 2>&1) || true
+
+          if [ -n "$COMMENT_BODY" ]; then
+            echo "has_issues=true" >> "$GITHUB_OUTPUT"
+            # Write to file to preserve multiline content
+            echo "$COMMENT_BODY" > /tmp/pr-comment-body.md
+          else
+            echo "has_issues=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Find existing bot comment
+        id: find-comment
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          COMMENT_ID=$(gh api "repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments" \
+            --paginate --jq '.[] | select(.body | contains("<!-- rebase-rules-check -->")) | .id' | head -1)
+          echo "comment_id=${COMMENT_ID}" >> "$GITHUB_OUTPUT"
+
+      - name: Post or update comment
+        if: steps.check.outputs.has_issues == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          BODY=$(cat /tmp/pr-comment-body.md)
+          if [ -n "${{ steps.find-comment.outputs.comment_id }}" ]; then
+            gh api "repos/${{ github.repository }}/issues/comments/${{ steps.find-comment.outputs.comment_id }}" \
+              -X PATCH -f body="$BODY"
+          else
+            gh pr comment "${{ github.event.pull_request.number }}" \
+              --repo "${{ github.repository }}" \
+              --body "$BODY"
+          fi
+
+      - name: Remove stale comment
+        if: steps.check.outputs.has_issues == 'false' && steps.find-comment.outputs.comment_id
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh api "repos/${{ github.repository }}/issues/comments/${{ steps.find-comment.outputs.comment_id }}" \
+            -X DELETE
