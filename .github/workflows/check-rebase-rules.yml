@@ -31,11 +31,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Fetch upstream remote
-        run: |
-          git remote add upstream-code https://github.com/microsoft/vscode || true
-          git fetch upstream-code --no-tags --depth=1
-
       - name: Run rebase rules check
         id: check
         run: |
