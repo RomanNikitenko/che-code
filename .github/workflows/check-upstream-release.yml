@@ -77,10 +77,12 @@ jobs:
             echo "exists=false" >> "$GITHUB_OUTPUT"
           fi
 
+      # Use PAT_TOKEN so the created issue triggers downstream workflows
+      # (events from GITHUB_TOKEN don't trigger other workflows).
       - name: Create issue
         if: steps.check.outputs.new_release == 'true' && steps.existing.outputs.exists == 'false'
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.PAT_TOKEN }}
           NEXT_BRANCH: ${{ steps.check.outputs.next_branch }}
         run: |
           VERSION=$(echo "$NEXT_BRANCH" | sed 's|release/||')
