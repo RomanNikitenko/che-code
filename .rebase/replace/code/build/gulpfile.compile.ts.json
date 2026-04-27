@@ -1,0 +1,6 @@
+[
+  {
+    "from": "export const compileBuildWithManglingTask = task.define('compile-build-with-mangling', task.series(compilation.copyCodiconsTask, makeCompileBuildTask(false)));",
+    "by": "export const compileBuildWithManglingTask = task.define('compile-build-with-mangling', task.series(compilation.copyCodiconsTask, makeCompileBuildTask(true)));"
+  }
+]
