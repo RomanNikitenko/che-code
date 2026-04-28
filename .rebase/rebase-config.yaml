@@ -3,7 +3,7 @@
 # (PREVIOUS_UPSTREAM_VERSION, CURRENT_UPSTREAM_VERSION) stay in rebase.sh.
 
 # Remote to push the alignment branch and create the PR against
-target_remote: "git@github.com:RomanNikitenko/che-code.git"
+target_remote: "https://github.com/RomanNikitenko/che-code.git"
 
 # PR testing configuration
 testing:
