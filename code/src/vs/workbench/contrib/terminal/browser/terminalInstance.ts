@@ -222,6 +222,8 @@ export class TerminalInstance extends Disposable implements ITerminalInstance {
 		this._shellLaunchConfig.waitOnExit = value;
 	}
 
+	get isVisible(): boolean { return this._isVisible; }
+
 	private _targetRef: ImmortalReference<TerminalLocation | undefined> = new ImmortalReference(undefined);
 	get targetRef(): IReference<TerminalLocation | undefined> { return this._targetRef; }
 
@@ -2297,7 +2299,7 @@ export class TerminalInstance extends Disposable implements ITerminalInstance {
 			// Not a reconnected or revived terminal
 			!this._shellLaunchConfig.attachPersistentProcess &&
 			// Not a Windows remote using ConPTY (#187084)
-			!(this._processManager.remoteAuthority && this._terminalConfigurationService.config.windowsEnableConpty && (await this._processManager.getBackendOS()) === OperatingSystem.Windows)
+			!(this._processManager.remoteAuthority && this._terminalConfigurationService.config.windowsUseConptyDll && (await this._processManager.getBackendOS()) === OperatingSystem.Windows)
 		) {
 			this.relaunch();
 			return;

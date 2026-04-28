@@ -41,7 +41,7 @@
   },
   {
     "from": "\tprivate _isVisible: boolean;\n\tget isVisible(): boolean { return this._isVisible; }\n\n\tprivate _targetRef",
-    "by": "\tprivate _targetRef"
+    "by": "\tget isVisible(): boolean { return this._isVisible; }\n\n\tprivate _targetRef"
   },
   {
     "from": "\t\t@IPreferencesService _preferencesService: IPreferencesService,",
@@ -149,7 +149,7 @@
   },
   {
     "from": "\t\t\t// Not a Windows remote using ConPTY which cannot relaunch (#187084). ConPTY is used on\n\t\t\t// Windows builds 18309+.\n\t\t\t!(this._processManager.remoteAuthority && (await this._processManager.getBackendOS()) === OperatingSystem.Windows && this._processManager.processTraits?.windowsPty?.buildNumber && this._processManager.processTraits.windowsPty.buildNumber >= 18309)",
-    "by": "\t\t\t// Not a Windows remote using ConPTY (#187084)\n\t\t\t!(this._processManager.remoteAuthority && this._terminalConfigurationService.config.windowsEnableConpty && (await this._processManager.getBackendOS()) === OperatingSystem.Windows)"
+    "by": "\t\t\t// Not a Windows remote using ConPTY (#187084)\n\t\t\t!(this._processManager.remoteAuthority && this._terminalConfigurationService.config.windowsUseConptyDll && (await this._processManager.getBackendOS()) === OperatingSystem.Windows)"
   },
   {
     "from": "\t/**\n\t * Agent CLIs whose tab title should come from their own escape sequences rather\n\t * than the configured template or a static profile name.\n\t */\n\tstatic readonly agentCliShellTypes: ReadonlySet<GeneralShellType> = new Set([\n\t\tGeneralShellType.Claude,\n\t\tGeneralShellType.Codex,\n\t\tGeneralShellType.Copilot,\n\t\tGeneralShellType.Gemini,\n\t]);\n\n\tconstructor(",

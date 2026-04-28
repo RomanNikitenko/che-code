@@ -56,7 +56,7 @@ import { ServerTelemetryChannel } from '../../platform/telemetry/common/remoteTe
 import { IServerTelemetryService, ServerNullTelemetryService, ServerTelemetryService } from '../../platform/telemetry/common/serverTelemetryService.js';
 import { RemoteTerminalChannel } from './remoteTerminalChannel.js';
 import { createURITransformer } from '../../base/common/uriTransformer.js';
-import { ServerConnectionToken, ServerConnectionTokenType } from './serverConnectionToken.js';\
+import { ServerConnectionToken, ServerConnectionTokenType } from './serverConnectionToken.js';
 import { DefaultExtensionsInstaller } from './che/defaultExtensionsInstaller.js';
 import { ServerEnvironmentService, ServerParsedArgs } from './serverEnvironmentService.js';
 import { REMOTE_TERMINAL_CHANNEL_NAME } from '../../workbench/contrib/terminal/common/remote/remoteTerminalChannel.js';
@@ -99,7 +99,7 @@ import { IMcpResourceScannerService, McpResourceScannerService } from '../../pla
 import { McpManagementChannel } from '../../platform/mcp/common/mcpManagementIpc.js';
 import { AllowedMcpServersService } from '../../platform/mcp/common/allowedMcpServersService.js';
 import { IMcpGalleryManifestService } from '../../platform/mcp/common/mcpGalleryManifest.js';
-import { McpGalleryManifestIPCService } from '../../platform/mcp/common/mcpGalleryManifestServiceIpc.js';\
+import { McpGalleryManifestIPCService } from '../../platform/mcp/common/mcpGalleryManifestServiceIpc.js';
 import { getPolicyService } from './che/serverServices.js';
 import { SANDBOX_HELPER_CHANNEL_NAME, SandboxHelperChannel } from '../../platform/sandbox/common/sandboxHelperIpc.js';
 import { SandboxHelperService } from '../../platform/sandbox/node/sandboxHelper.js';
@@ -149,8 +149,8 @@ export async function setupServerServices(connectionToken: ServerConnectionToken
 	services.set(IUriIdentityService, uriIdentityService);
 
 	// Configuration
-	const policyService = getPolicyService(environmentService, fileService, logService, disposables);\
-\	const configurationService = new ConfigurationService(environmentService.machineSettingsResource, fileService, policyService, logService);
+	const policyService = getPolicyService(environmentService, fileService, logService, disposables);
+	const configurationService = new ConfigurationService(environmentService.machineSettingsResource, fileService, policyService, logService);
 	services.set(IConfigurationService, configurationService);
 
 	// User Data Profiles
@@ -262,8 +262,8 @@ export async function setupServerServices(connectionToken: ServerConnectionToken
 		const mcpManagementService = accessor.get(IMcpManagementService);
 		const extensionManagementService = accessor.get(INativeServerExtensionManagementService);
 		const extensionsScannerService = accessor.get(IExtensionsScannerService);
-		const extensionGalleryService = accessor.get(IExtensionGalleryService);\
-\	\	const extensionGalleryManifestService = accessor.get(IExtensionGalleryManifestService);
+		const extensionGalleryService = accessor.get(IExtensionGalleryService);
+		const extensionGalleryManifestService = accessor.get(IExtensionGalleryManifestService);
 		const languagePackService = accessor.get(ILanguagePackService);
 		const remoteExtensionEnvironmentChannel = new RemoteAgentEnvironmentChannel(connectionToken, environmentService, userDataProfilesService, extensionHostStatusService, logService);
 		socketServer.registerChannel('remoteextensionsenvironment', remoteExtensionEnvironmentChannel);
@@ -289,14 +289,14 @@ export async function setupServerServices(connectionToken: ServerConnectionToken
 		const channel = new ExtensionManagementChannel(extensionManagementService, (ctx: RemoteAgentConnectionContext) => getUriTransformer(ctx.remoteAuthority));
 		socketServer.registerChannel('extensions', channel);
 
-		socketServer.registerChannel('mcpManagement', new McpManagementChannel(mcpManagementService, (ctx: RemoteAgentConnectionContext) => getUriTransformer(ctx.remoteAuthority)));\
-\	\	socketServer.registerChannel('policy', new PolicyChannel(policyService));
+		socketServer.registerChannel('mcpManagement', new McpManagementChannel(mcpManagementService, (ctx: RemoteAgentConnectionContext) => getUriTransformer(ctx.remoteAuthority)));
+		socketServer.registerChannel('policy', new PolicyChannel(policyService));
 
 		// clean up extensions folder
 		remoteExtensionsScanner.whenExtensionsReady().then(() => extensionManagementService.cleanUp());
 
-		disposables.add(new ErrorTelemetry(accessor.get(ITelemetryService)));\
-\	\	disposables.add(new DefaultExtensionsInstaller(extensionManagementService, logService, fileService, userDataProfilesService, extensionGalleryService, extensionGalleryManifestService, remoteExtensionsScanner));
+		disposables.add(new ErrorTelemetry(accessor.get(ITelemetryService)));
+		disposables.add(new DefaultExtensionsInstaller(extensionManagementService, logService, fileService, userDataProfilesService, extensionGalleryService, extensionGalleryManifestService, remoteExtensionsScanner));
 
 		return {
 			telemetryService: accessor.get(ITelemetryService)
