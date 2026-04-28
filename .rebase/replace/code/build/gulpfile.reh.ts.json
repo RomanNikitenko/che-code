@@ -1,6 +1,6 @@
 [
     {
-        "from": "import flatmap from 'gulp-flatmap';\nimport gunzip from 'gulp-gunzip';\nimport untar from 'gulp-untar';",
+        "from": "import flatmap from 'gulp-flatmap';\nimport gunzip from 'gulp-gunzip';\nimport { untar } from './lib/util.ts';",
         "by": "import decompress from 'gulp-decompress';"
     },
     {

@@ -1,0 +1,162 @@
+[
+  {
+    "from": "import { ISeparator, normalizeDriveLetter, template } from '../../../../base/common/labels.js';",
+    "by": "import { ISeparator, template } from '../../../../base/common/labels.js';"
+  },
+  {
+    "from": "import { INotificationService, Severity } from '../../../../platform/notification/common/notification.js';",
+    "by": "import { INotificationService, IPromptChoice, Severity } from '../../../../platform/notification/common/notification.js';"
+  },
+  {
+    "from": "import { IStorageService } from '../../../../platform/storage/common/storage.js';",
+    "by": "import { IStorageService, StorageScope, StorageTarget } from '../../../../platform/storage/common/storage.js';"
+  },
+  {
+    "from": "import { IEnvironmentVariableInfo } from '../common/environmentVariable.js';",
+    "by": "import { IEnvironmentVariableInfo, IEnvironmentVariableService } from '../common/environmentVariable.js';"
+  },
+  {
+    "from": "import { DEFAULT_COMMANDS_TO_SKIP_SHELL, ITerminalProcessManager, ITerminalProfileResolverService, ProcessState, TERMINAL_VIEW_ID, TerminalCommandId } from '../common/terminal.js';",
+    "by": "import { DEFAULT_COMMANDS_TO_SKIP_SHELL, ITerminalProcessManager, ITerminalProfileResolverService, ProcessState, TERMINAL_CREATION_COMMANDS, TERMINAL_VIEW_ID, TerminalCommandId } from '../common/terminal.js';"
+  },
+  {
+    "from": "import { TerminalIconPicker } from './terminalIconPicker.js';\nimport { TerminalResizeDebouncer }",
+    "by": "import { TerminalIconPicker } from './terminalIconPicker.js';\nimport { EnvironmentVariableService } from '../common/environmentVariableService.js';\nimport { TerminalResizeDebouncer }"
+  },
+  {
+    "from": "/**\n * Patterns for detecting agent CLIs from the OSC title they emit.\n */\nconst agentCliTitlePatterns: ReadonlyMap<GeneralShellType, RegExp> = new Map([\n\t[GeneralShellType.Claude, /claude\\s*code/i],\n\t// [GeneralShellType.Codex, /\\bcodex\\b/i], // codex does not report osc title.\n\t[GeneralShellType.Copilot, /\\bcopilot\\b/i],\n\t[GeneralShellType.Gemini, /\\bgemini\\b/i],\n]);\n\n",
+    "by": ""
+  },
+  {
+    "from": "\tprivate _hadFocusOnExit: boolean;\n\tprivate _exitCode",
+    "by": "\tprivate _hadFocusOnExit: boolean;\n\tprivate _isVisible: boolean;\n\tprivate _exitCode"
+  },
+  {
+    "from": "\tprivate _shellType: TerminalShellType | undefined;\n\tprivate _agentShellTypeFromSequence: GeneralShellType | undefined;\n\tprivate _title",
+    "by": "\tprivate _shellType: TerminalShellType | undefined;\n\tprivate _title"
+  },
+  {
+    "from": "\tprivate _lastLayoutDimensions: dom.Dimension | undefined;\n\tprivate _description",
+    "by": "\tprivate _lastLayoutDimensions: dom.Dimension | undefined;\n\tprivate _hasHadInput: boolean;\n\tprivate _description"
+  },
+  {
+    "from": "\tprivate _isVisible: boolean;\n\tget isVisible(): boolean { return this._isVisible; }\n\n\tprivate _targetRef",
+    "by": "\tget isVisible(): boolean { return this._isVisible; }\n\n\tprivate _targetRef"
+  },
+  {
+    "from": "\t\t@IPreferencesService _preferencesService: IPreferencesService,",
+    "by": "\t\t@IPreferencesService private readonly _preferencesService: IPreferencesService,"
+  },
+  {
+    "from": "\t\t@IStorageService _storageService: IStorageService,",
+    "by": "\t\t@IStorageService private readonly _storageService: IStorageService,"
+  },
+  {
+    "from": "\t\t@IProductService _productService: IProductService,",
+    "by": "\t\t@IProductService private readonly _productService: IProductService,"
+  },
+  {
+    "from": "\t\t@IAccessibilitySignalService private readonly _accessibilitySignalService: IAccessibilitySignalService,\n\t\t@IViewDescriptorService private readonly _viewDescriptorService: IViewDescriptorService,\n\t) {",
+    "by": "\t\t@IAccessibilitySignalService private readonly _accessibilitySignalService: IAccessibilitySignalService,\n\t\t@IViewDescriptorService private readonly _viewDescriptorService: IViewDescriptorService,\n\t\t@IEnvironmentVariableService private readonly _environmentVariableService: EnvironmentVariableService,\n\t) {"
+  },
+  {
+    "from": "\t\tthis._instanceId = TerminalInstance._instanceIdCounter++;\n\t\tthis._fixedRows",
+    "by": "\t\tthis._instanceId = TerminalInstance._instanceIdCounter++;\n\t\tthis._hasHadInput = false;\n\t\tthis._fixedRows"
+  },
+  {
+    "from": "\t\t}\n\n\t\tconst scopedContextKeyService = this._register(_contextKeyService.createScoped(this._wrapperElement));\n\t\tthis._scopedContextKeyService = scopedContextKeyService;",
+    "by": "\t\t}\n\n\t\tif (!this._workspaceFolder && !this.shellLaunchConfig.cwd) {\n\t\t\tconst envs = this._environmentVariableService.collections.get('eclipse-che.api');\n\t\t\tif (envs) {\n\t\t\t\tconst projectsRoot = envs.map.get('PROJECTS_ROOT');\n\t\t\t\tif (projectsRoot) {\n\t\t\t\t\tthis.shellLaunchConfig.cwd = projectsRoot.value\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\n\t\tconst scopedContextKeyService = this._register(_contextKeyService.createScoped(this._wrapperElement));\n\t\tthis._scopedContextKeyService = scopedContextKeyService;"
+  },
+  {
+    "from": "\t\t\t\t\t// Use DisposableStore to track multiple listeners for this capability\n\t\t\t\t\tconst store = new DisposableStore();\n\t\t\t\t\tstore.add(Event.any(\n\t\t\t\t\t\te.capability.promptInputModel.onDidStartInput,\n\t\t\t\t\t\te.capability.promptInputModel.onDidChangeInput,\n\t\t\t\t\t\te.capability.promptInputModel.onDidFinishInput\n\t\t\t\t\t)(refreshInfo));\n\t\t\t\t\tstore.add(e.capability.onCommandExecuted(async (command) => {",
+    "by": "\t\t\t\t\tcapabilityListeners.set(e.id, Event.any(\n\t\t\t\t\t\te.capability.promptInputModel.onDidStartInput,\n\t\t\t\t\t\te.capability.promptInputModel.onDidChangeInput,\n\t\t\t\t\t\te.capability.promptInputModel.onDidFinishInput\n\t\t\t\t\t)(refreshInfo));\n\t\t\t\t\tthis._register(e.capability.onCommandExecuted(async (command) => {"
+  },
+  {
+    "from": "\t\t\t\t\t}));\n\t\t\t\t\tcapabilityListeners.set(e.id, store);\n\t\t\t\t\tbreak;",
+    "by": "\t\t\t\t\t}));\n\t\t\t\t\tbreak;"
+  },
+  {
+    "from": "if (this.shellLaunchConfig.customPtyImplementation && !this._shellLaunchConfig.titleTemplate) {",
+    "by": "if (this.shellLaunchConfig.customPtyImplementation) {"
+  },
+  {
+    "from": "\t\t// Init conpty compat and link handler after process creation as they rely on the",
+    "by": "\t\t// Init winpty compat and link handler after process creation as they rely on the"
+  },
+  {
+    "from": "\t\t\t// Enable reflow cursor to avoid prompt loss: https://github.com/microsoft/vscode/issues/274372\n\t\t\txterm.raw.options.reflowCursorLine = processTraits?.windowsPty?.backend === 'conpty' && !!this._terminalConfigurationService.config.windowsUseConptyDll;\n",
+    "by": ""
+  },
+  {
+    "from": "\tasync runCommand(commandLine: string, shouldExecute: boolean, commandId?: string, forceBracketedPasteMode?: boolean, commandLineForMetadata?: string): Promise<void> {",
+    "by": "\tasync runCommand(commandLine: string, shouldExecute: boolean, commandId?: string): Promise<void> {"
+  },
+  {
+    "from": "\t\t\tconst commandLineToReport = commandLineForMetadata ?? commandLine;\n\t\t\tthis.xterm?.shellIntegration.setNextCommandId(commandLineToReport, commandId);\n\t\t\tawait this._processManager.setNextCommandId(commandLineToReport, commandId);",
+    "by": "\t\t\tthis.xterm?.shellIntegration.setNextCommandId(commandLine, commandId);\n\t\t\tawait this._processManager.setNextCommandId(commandLine, commandId);"
+  },
+  {
+    "from": "\t\t// By default, use bracketed paste mode only when not running the command; callers can override\n\t\t// this by explicitly enabling it via the bracketedPasteMode argument.\n\t\tawait this.sendText(commandLine, shouldExecute, !shouldExecute || forceBracketedPasteMode);",
+    "by": "\t\t// Use bracketed paste mode only when not running the command\n\t\tawait this.sendText(commandLine, shouldExecute, !shouldExecute);"
+  },
+  {
+    "from": "\t\t\t// Skip processing by xterm.js of keyboard events that resolve to commands defined in\n\t\t\t// the commandsToSkipShell setting, or that use the Meta.\n\t\t\t// The metaKey check is needed because when a shell like fish enables the kitty\n\t\t\t// keyboard protocol, xterm.js encodes Meta-modified keys as CSI u sequences and\n\t\t\t// consumes them via preventDefault. The (non-kitty) traditional xterm.js handler already skips\n\t\t\t// Meta keys so they bubble up naturally, but the kitty handler does not.\n\t\t\tif (!this._terminalConfigurationService.config.sendKeybindingsToShell && resolveResult.kind === ResultKind.KbFound && resolveResult.commandId && (event.metaKey || this._skipTerminalCommands.some(k => k === resolveResult.commandId))) {\n\t\t\t\tevent.preventDefault();\n\t\t\t\treturn false;\n\t\t\t}",
+    "by": "\t\t\tconst SHOW_TERMINAL_CONFIG_PROMPT_KEY = 'terminal.integrated.showTerminalConfigPrompt';\n\t\t\tconst EXCLUDED_KEYS = ['RightArrow', 'LeftArrow', 'UpArrow', 'DownArrow', 'Space', 'Meta', 'Control', 'Shift', 'Alt', '', 'Delete', 'Backspace', 'Tab'];\n\n\t\t\t// only keep track of input if prompt hasn't already been shown\n\t\t\tif (this._storageService.getBoolean(SHOW_TERMINAL_CONFIG_PROMPT_KEY, StorageScope.APPLICATION, true) &&\n\t\t\t\t!EXCLUDED_KEYS.includes(event.key) &&\n\t\t\t\t!event.ctrlKey &&\n\t\t\t\t!event.shiftKey &&\n\t\t\t\t!event.altKey) {\n\t\t\t\tthis._hasHadInput = true;\n\t\t\t}\n\n\t\t\t// for keyboard events that resolve to commands described\n\t\t\t// within commandsToSkipShell, either alert or skip processing by xterm.js\n\t\t\tif (resolveResult.kind === ResultKind.KbFound && resolveResult.commandId && this._skipTerminalCommands.some(k => k === resolveResult.commandId) && !this._terminalConfigurationService.config.sendKeybindingsToShell) {\n\t\t\t\t// don't alert when terminal is opened or closed\n\t\t\t\tif (this._storageService.getBoolean(SHOW_TERMINAL_CONFIG_PROMPT_KEY, StorageScope.APPLICATION, true) &&\n\t\t\t\t\tthis._hasHadInput &&\n\t\t\t\t\t!TERMINAL_CREATION_COMMANDS.includes(resolveResult.commandId)) {\n\t\t\t\t\tthis._notificationService.prompt(\n\t\t\t\t\t\tSeverity.Info,\n\t\t\t\t\t\tnls.localize('keybindingHandling', \"Some keybindings don't go to the terminal by default and are handled by {0} instead.\", this._productService.nameLong),\n\t\t\t\t\t\t[\n\t\t\t\t\t\t\t{\n\t\t\t\t\t\t\t\tlabel: nls.localize('configureTerminalSettings', \"Configure Terminal Settings\"),\n\t\t\t\t\t\t\t\trun: () => {\n\t\t\t\t\t\t\t\t\tthis._preferencesService.openSettings({ jsonEditor: false, query: `@id:${TerminalSettingId.CommandsToSkipShell},${TerminalSettingId.SendKeybindingsToShell},${TerminalSettingId.AllowChords}` });\n\t\t\t\t\t\t\t\t}\n\t\t\t\t\t\t\t} satisfies IPromptChoice\n\t\t\t\t\t\t]\n\t\t\t\t\t);\n\t\t\t\t\tthis._storageService.store(SHOW_TERMINAL_CONFIG_PROMPT_KEY, false, StorageScope.APPLICATION, StorageTarget.USER);\n\t\t\t\t}\n\t\t\t\tevent.preventDefault();\n\t\t\t\treturn false;\n\t\t\t}"
+  },
+  {
+    "from": "\tasync sendText(text: string, shouldExecute: boolean, forceBracketedPasteMode?: boolean): Promise<void> {",
+    "by": "\tasync sendText(text: string, shouldExecute: boolean, bracketedPasteMode?: boolean): Promise<void> {"
+  },
+  {
+    "from": "\t\tif (forceBracketedPasteMode && this.xterm?.raw.modes.bracketedPasteMode) {",
+    "by": "\t\tif (bracketedPasteMode && this.xterm?.raw.modes.bracketedPasteMode) {"
+  },
+  {
+    "from": "\t\t\tif (this._shellLaunchConfig.name && !this._shellLaunchConfig.titleTemplate) {\n\t\t\t\tthis._setTitle(this._shellLaunchConfig.name, TitleEventSource.Api);",
+    "by": "\t\t\tif (this._shellLaunchConfig.name) {\n\t\t\t\tthis._setTitle(this._shellLaunchConfig.name, TitleEventSource.Api);"
+  },
+  {
+    "from": "\t\t\t\t// When a title template is provided, use the name as the initial process name\n\t\t\t\t// so it can be referenced via ${process} in the template\n\t\t\t\tif (this._shellLaunchConfig.titleTemplate && this._shellLaunchConfig.name) {\n\t\t\t\t\tthis._setTitle(this._shellLaunchConfig.name, TitleEventSource.Process);\n\t\t\t\t} else {\n\t\t\t\t\tthis._setTitle(this._shellLaunchConfig.executable, TitleEventSource.Process);\n\t\t\t\t}",
+    "by": "\t\t\t\tthis._setTitle(this._shellLaunchConfig.executable, TitleEventSource.Process);"
+  },
+  {
+    "from": "\t\t\t\t\tthis._handleShellTypeChange(value as IProcessPropertyMap[ProcessPropertyType.ShellType]);",
+    "by": "\t\t\t\t\tthis.setShellType(value as IProcessPropertyMap[ProcessPropertyType.ShellType]);"
+  },
+  {
+    "from": "normalizeDriveLetter(this._cwd) !== normalizeDriveLetter(this._userHome)) {\n\t\t\t// something strange is going on if cwd is not userHome in an empty workspace\n\t\t\tthis._onProcessExit({\n\t\t\t\tmessage: nls.localize('workspaceEmptyCreateTerminalCwd', \"Cannot launch a terminal process in an empty workspace with cwd {0} different from userHome {1}\", this._cwd, this._userHome)",
+    "by": "this._cwd !== this._userHome) {\n\t\t\t// something strange is going on if cwd is not userHome in an empty workspace\n\t\t\tthis._onProcessExit({\n\t\t\t\tmessage: nls.localize('workspaceNotTrustedCreateTerminalCwd', \"Cannot launch a terminal process in an untrusted workspace with cwd {0} and userHome {1}\", this._cwd, this._userHome)"
+  },
+  {
+    "from": "\t\tthis._shellLaunchConfig = shell; // Must be done before calling _createProcess()\n\t\tthis._agentShellTypeFromSequence = undefined;\n\t\tawait this._processManager.relaunch",
+    "by": "\t\tthis._shellLaunchConfig = shell; // Must be done before calling _createProcess()\n\t\tawait this._processManager.relaunch"
+  },
+  {
+    "from": "\t\t// Agent CLIs run as `node`, so the OSC title is our only cross-platform signal.\n\t\tfor (const [shellType, pattern] of agentCliTitlePatterns) {\n\t\t\tif (pattern.test(title)) {\n\t\t\t\tthis._agentShellTypeFromSequence = shellType;\n\t\t\t\tthis.setShellType(shellType);\n\t\t\t\tbreak;\n\t\t\t}\n\t\t}\n\t}\n\n\tprivate _handleShellTypeChange(shellType: TerminalShellType | undefined): void {\n\t\t// Once an agent CLI is locked in, ignore stale `node`/undefined reports from the pty\n\t\t// until a real shell takes over (meaning the agent exited).\n\t\tif (this._agentShellTypeFromSequence) {\n\t\t\tif (shellType === GeneralShellType.Node || shellType === undefined) {\n\t\t\t\treturn;\n\t\t\t}\n\t\t\tthis._agentShellTypeFromSequence = undefined;\n\t\t}\n\t\tthis.setShellType(shellType);\n\t}\n\n\tprivate async _trust",
+    "by": "\t}\n\n\tprivate async _trust"
+  },
+  {
+    "from": "\t\tif (this._configurationService.getValue(TerminalSettingId.AllowInUntrustedWorkspace)) {\n\t\t\tthis._logService.info(`Workspace trust check bypassed due to ${TerminalSettingId.AllowInUntrustedWorkspace}`);\n\t\t\treturn true;\n\t\t}\n\t\tconst trustRequest = await this._workspaceTrustRequestService.requestWorkspaceTrust({\n\t\t\tmessage: nls.localize('terminal.requestTrust', \"Creating a terminal process requires executing code\")\n\t\t});\n\t\treturn trustRequest === true;",
+    "by": "\t\treturn (await this._workspaceTrustRequestService.requestWorkspaceTrust(\n\t\t\t{\n\t\t\t\tmessage: nls.localize('terminal.requestTrust', \"Creating a terminal process requires executing code\")\n\t\t\t})) === true;"
+  },
+  {
+    "from": "\t\tconst pixelWidth = rawXterm.dimensions?.css.canvas.width;\n\t\tconst pixelHeight = rawXterm.dimensions?.css.canvas.height;\n\t\tconst roundedPixelWidth = pixelWidth ? Math.round(pixelWidth) : undefined;\n\t\tconst roundedPixelHeight = pixelHeight ? Math.round(pixelHeight) : undefined;\n\t\tawait this._processManager.setDimensions(rawXterm.cols, rawXterm.rows, undefined, roundedPixelWidth, roundedPixelHeight);",
+    "by": "\t\tawait this._processManager.setDimensions(rawXterm.cols, rawXterm.rows);"
+  },
+  {
+    "from": "\t\tthis._labelComputer?.refreshLabel(this);\n\t}\n\n\tprivate _setAriaLabel",
+    "by": "\n\t}\n\n\tprivate _setAriaLabel"
+  },
+  {
+    "from": "\t\t\t// Not a Windows remote using ConPTY which cannot relaunch (#187084). ConPTY is used on\n\t\t\t// Windows builds 18309+.\n\t\t\t!(this._processManager.remoteAuthority && (await this._processManager.getBackendOS()) === OperatingSystem.Windows && this._processManager.processTraits?.windowsPty?.buildNumber && this._processManager.processTraits.windowsPty.buildNumber >= 18309)",
+    "by": "\t\t\t// Not a Windows remote using ConPTY (#187084)\n\t\t\t!(this._processManager.remoteAuthority && this._terminalConfigurationService.config.windowsUseConptyDll && (await this._processManager.getBackendOS()) === OperatingSystem.Windows)"
+  },
+  {
+    "from": "\t/**\n\t * Agent CLIs whose tab title should come from their own escape sequences rather\n\t * than the configured template or a static profile name.\n\t */\n\tstatic readonly agentCliShellTypes: ReadonlySet<GeneralShellType> = new Set([\n\t\tGeneralShellType.Claude,\n\t\tGeneralShellType.Codex,\n\t\tGeneralShellType.Copilot,\n\t\tGeneralShellType.Gemini,\n\t]);\n\n\tconstructor(",
+    "by": "\tconstructor("
+  },
+  {
+    "from": "\t\tconst tabs = this._terminalConfigurationService.config.tabs;\n\t\tconst useAgentCliTitle = tabs.allowAgentCliTitle && TerminalLabelComputer.agentCliShellTypes.has(instance.shellType as GeneralShellType);\n\t\tconst titleTemplate = instance.shellLaunchConfig.titleTemplate ?? (useAgentCliTitle ? '${sequence}' : tabs.title);\n\t\tthis._title = this.computeLabel(instance, titleTemplate, TerminalLabelType.Title, reset);\n\t\tthis._description = this.computeLabel(instance, tabs.description, TerminalLabelType.Description);",
+    "by": "\t\tthis._title = this.computeLabel(instance, this._terminalConfigurationService.config.tabs.title, TerminalLabelType.Title, reset);\n\t\tthis._description = this.computeLabel(instance, this._terminalConfigurationService.config.tabs.description, TerminalLabelType.Description);"
+  }
+]
