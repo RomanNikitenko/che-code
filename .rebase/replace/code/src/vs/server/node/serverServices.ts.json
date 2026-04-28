@@ -16,8 +16,8 @@
 		"by": "socketServer.registerChannel('mcpManagement', new McpManagementChannel(mcpManagementService, (ctx: RemoteAgentConnectionContext) => getUriTransformer(ctx.remoteAuthority)));\\\n\\\t\\\tsocketServer.registerChannel('policy', new PolicyChannel(policyService));"
 	},
 	{
-		"from": "import { ServerConnectionToken } from './serverConnectionToken.js';",
-		"by": "import { ServerConnectionToken } from './serverConnectionToken.js';\\\nimport { DefaultExtensionsInstaller } from './che/defaultExtensionsInstaller.js';"
+		"from": "import { ServerConnectionToken, ServerConnectionTokenType } from './serverConnectionToken.js';",
+		"by": "import { ServerConnectionToken, ServerConnectionTokenType } from './serverConnectionToken.js';\\\nimport { DefaultExtensionsInstaller } from './che/defaultExtensionsInstaller.js';"
 	},
 	{
 		"from": "const extensionGalleryService = accessor.get(IExtensionGalleryService);",
