@@ -15,7 +15,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 | Input pattern | Skill file |
 |---|---|
-| "Alignment Che-Code with" | `.claude/skills/rebase/SKILL.md` |
+| "Alignment Che-Code with" | `.claude/skills/test-pr.md` |
 | "add-rebase-rules" | `.claude/skills/add-rebase-rules/SKILL.md` |
 
 ## Project Overview
