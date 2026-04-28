@@ -7,6 +7,7 @@ import { env } from '../../../base/common/process.js';
 import { IProductConfiguration } from '../../../base/common/product.js';
 import { ISandboxConfiguration } from '../../../base/parts/sandbox/common/sandboxTypes.js';
 import { loadFromFileSystem } from './che/product.js';
+
 /**
  * @deprecated It is preferred that you use `IProductService` if you can. This
  * allows web embedders to override our defaults. But for things like `product.quality`,
@@ -72,10 +73,21 @@ else {
 			licenseName: 'MIT',
 			licenseUrl: 'https://github.com/microsoft/vscode/blob/main/LICENSE.txt',
 			serverLicenseUrl: 'https://github.com/microsoft/vscode/blob/main/LICENSE.txt',
-			extensionsGallery: {
-				serviceUrl: 'https://open-vsx.org/vscode/gallery',
-				itemUrl: 'https://open-vsx.org/vscode/item',
-			},
+			defaultChatAgent: {
+				extensionId: 'GitHub.copilot',
+				chatExtensionId: 'GitHub.copilot-chat',
+				provider: {
+					default: {
+						id: 'github',
+						name: 'GitHub',
+					},
+					enterprise: {
+						id: 'github-enterprise',
+						name: 'GitHub Enterprise',
+					}
+				},
+				providerScopes: []
+			}
 		});
 	}
 }
