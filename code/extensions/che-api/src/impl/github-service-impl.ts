@@ -195,6 +195,14 @@ export class GithubServiceImpl implements GithubService {
   private async initializeToken(): Promise<void> {
     this.logger.info('Github Service: extracting token...');
 
+    if (process.env.GITHUB_TEST_TOKEN) {
+      this.token = process.env.GITHUB_TEST_TOKEN;
+      this.logger.info('Github Service: using token from GITHUB_TEST_TOKEN env variable');
+      return;
+    } else {
+      this.logger.info('Github Service: NO token from GITHUB_TEST_TOKEN env variable');
+    }
+
     const deviceAuthToken = await this.getDeviceAuthToken();
     if (deviceAuthToken) {
       this.token = deviceAuthToken;

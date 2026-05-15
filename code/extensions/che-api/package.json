@@ -21,6 +21,14 @@
       "supported": true
     }
   },
+  "contributes": {
+    "commands": [
+      {
+        "command": "che-api.test-github-proxy",
+        "title": "Test GitHub Proxy (axios)"
+      }
+    ]
+  },
   "main": "./out/extension.js",
   "scripts": {
     "compile": "gulp compile-extension:che-api",
