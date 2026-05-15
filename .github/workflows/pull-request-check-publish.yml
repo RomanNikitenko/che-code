@@ -82,15 +82,47 @@ jobs:
         run: |
           docker image rm che-code-amd64 || true
           docker system prune -af
+
+      - name: Check if arm64 artifact exists
+        id: check-arm64
+        run: |
+          if [ -f che-code-arm64.tgz ]; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Load che-code-arm64 image
+        if: steps.check-arm64.outputs.exists == 'true'
+        run: |
+          docker load -i che-code-arm64.tgz
+
+      - name: Push che-code-arm64 docker image
+        if: steps.check-arm64.outputs.exists == 'true'
+        run: |
+          export IMAGE=quay.io/${{ secrets.QUAY_USERNAME }}/che-code:pr-${{env._PR_NUMBER}}-arm64
+          docker tag che-code-arm64 ${IMAGE}
+          docker push ${IMAGE}
+          echo "_CHE_CODE_ARM64_IMAGE=${IMAGE}" >> $GITHUB_ENV
+
+      - name: Remove che-code-arm64 and prune
+        if: steps.check-arm64.outputs.exists == 'true'
+        run: |
+          docker image rm che-code-arm64 || true
+          docker system prune -af
           
       - name: 'Comment PR'
         uses: actions/github-script@v7
         with:
          script: |
            const { repo: { owner, repo } } = context;
+           let body = `Pull Request images published ✨\n\nEditor amd64: [${process.env._CHE_CODE_AMD64_IMAGE}](https://${process.env._CHE_CODE_AMD64_IMAGE})`;
+           if (process.env._CHE_CODE_ARM64_IMAGE) {
+             body += `\nEditor arm64: [${process.env._CHE_CODE_ARM64_IMAGE}](https://${process.env._CHE_CODE_ARM64_IMAGE})`;
+           }
            await github.rest.issues.createComment({
               issue_number: process.env._PR_NUMBER,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: `Pull Request images published ✨\n\nEditor amd64: [${process.env._CHE_CODE_AMD64_IMAGE}](https://${process.env._CHE_CODE_AMD64_IMAGE})`
+              body
             })
