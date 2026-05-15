@@ -42,7 +42,7 @@ jobs:
       fail-fast: false
       matrix:
         dist: ['libc-ubi8', 'libc-ubi9', 'musl']
-        runners: ['ubuntu-22.04']
+        runners: ['ubuntu-22.04', 'ubuntu-22.04-arm']
     runs-on: ${{matrix.runners}}
     steps:
       - name: Set arch environment variable
@@ -79,7 +79,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        runners: ['ubuntu-22.04']
+        runners: ['ubuntu-22.04', 'ubuntu-22.04-arm']
     runs-on: ${{matrix.runners}}
     steps:
       - name: Set arch environment variable
