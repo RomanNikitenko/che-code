@@ -16,6 +16,10 @@ cp -r /checode-* /checode/
 # Copy machine-exec as well
 mkdir -p /checode/bin
 cp /bin/machine-exec /checode/bin/
+# Copy helper script for runtime dependency checks
+if [ -f /bin/check-runtime-libs.sh ]; then
+  cp /bin/check-runtime-libs.sh /checode/bin/
+fi
 # Copy entrypoint
 cp /entrypoint-volume.sh /checode/
 # Copy remote configuration

@@ -37,6 +37,7 @@ RUN chmod -R g-w /mnt/rootfs/etc/passwd
 
 COPY --from=machine-exec --chown=0:0 /go/bin/che-machine-exec /mnt/rootfs/bin/machine-exec
 COPY --chmod=755 /build/scripts/*.sh /mnt/rootfs/
+COPY --chmod=755 /build/scripts/helper/check-runtime-libs.sh /mnt/rootfs/bin/check-runtime-libs.sh
 COPY --chmod=755 /build/remote-config /mnt/rootfs/remote/data/Machine/
 
 # Create all-in-one image
