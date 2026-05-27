@@ -20,7 +20,7 @@ RUN dnf -y install libsecret libX11-devel libxkbcommon \
 
 COPY --chmod=664 /build/conf/dev/.p10k.zsh /home/user/.p10k.zsh
 
-# zsh support
+# zsh support test
 RUN wget https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh -O - | zsh && \
     cp $HOME/.oh-my-zsh/templates/zshrc.zsh-template $HOME/.zshrc && \
     chsh -s $(which zsh) root && \
