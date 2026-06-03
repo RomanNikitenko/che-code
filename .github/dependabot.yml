@@ -73,14 +73,6 @@ updates:
       prefix: "deps(npm)"
 
   - package-ecosystem: "npm"
-    directory: "/code/extensions/che-github-authentication"
-    schedule:
-      interval: "weekly"
-    open-pull-requests-limit: 5
-    commit-message:
-      prefix: "deps(npm)"
-
-  - package-ecosystem: "npm"
     directory: "/code/extensions/che-port"
     schedule:
       interval: "weekly"

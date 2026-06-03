@@ -105,11 +105,10 @@ Replace `che-api` with any Che extension name. Generates dependency reports in `
 
 ### Che-Specific Extensions (in `code/extensions/`)
 
-Nine extensions provide Kubernetes/Che integration:
+Eight extensions provide Kubernetes/Che integration:
 - `che-api` — API for Che platform integration
 - `che-activity-tracker` — User activity tracking
 - `che-commands` — Custom command support
-- `che-github-authentication` — GitHub OAuth flow
 - `che-port` — Port exposure management for pods
 - `che-remote` — Remote workspace status indicator
 - `che-resource-monitor` — Resource usage monitoring

@@ -21,7 +21,6 @@ export const dirs = [
 	'extensions/che-remote',
 	'extensions/che-resource-monitor',
 	'extensions/che-terminal',
-	'extensions/che-github-authentication',
 	'extensions/configuration-editing',
 	'extensions/copilot',
 	'extensions/css-language-features',
