@@ -95,11 +95,10 @@ License check tools work for the next extensions:
 1. `che-activity-tracker`
 2. `che-api`
 3. `che-commands`
-4. `che-github-authentication`
-5. `che-port`
-6. `che-remote`
-7. `che-resource-monitor`
-8. `che-terminal`
+4. `che-port`
+5. `che-remote`
+6. `che-resource-monitor`
+7. `che-terminal`
 
 Dependencies usage restrictions could be checked with the `license:check` command. Example for `che-api`:
 

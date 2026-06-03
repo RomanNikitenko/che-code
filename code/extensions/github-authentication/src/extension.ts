@@ -4,8 +4,6 @@
  *--------------------------------------------------------------------------------------------*/
 
 import * as vscode from 'vscode';
-let enableExtension = false;
-import { initialize } from './device-flow';
 import { GitHubAuthenticationProvider, UriEventHandler } from './github';
 
 const settingNotSent = '"github-enterprise.uri" not set';
@@ -63,11 +61,6 @@ function initGHES(context: vscode.ExtensionContext, uriHandler: UriEventHandler)
 }
 
 export function activate(context: vscode.ExtensionContext) {
-	if (!enableExtension) {
-		initialize(context);
-		return;
-	}
-
 	const uriHandler = new UriEventHandler();
 	context.subscriptions.push(uriHandler);
 	context.subscriptions.push(vscode.window.registerUriHandler(uriHandler));

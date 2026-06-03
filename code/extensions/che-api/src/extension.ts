@@ -11,11 +11,7 @@
 
 /* eslint-disable header/header */
 
-if (Reflect.metadata === undefined) {
-    // tslint:disable-next-line:no-require-imports no-var-requires
-    require('reflect-metadata');
-}
-
+import 'reflect-metadata';
 import { Container } from 'inversify';
 import * as vscode from 'vscode';
 import { Api } from './api/api';
@@ -78,6 +74,17 @@ export async function activate(_extensionContext: vscode.ExtensionContext): Prom
     _extensionContext.environmentVariableCollection.replace('PROJECTS_ROOT', projectsRoot);
 
     await container.get(K8SServiceImpl).ensureKubernetesServiceHostWhitelisted();
+
+    _extensionContext.subscriptions.push(
+        vscode.commands.registerCommand('che-api.test-github-proxy', async () => {
+            try {
+                const user = await githubService.getUser();
+                vscode.window.showInformationMessage(`Success! GitHub user: ${user.login}`);
+            } catch (e: any) {
+                vscode.window.showErrorMessage(`Failed to get GitHub user: ${e.message}`);
+            }
+        })
+    );
 
     return api;
 }
