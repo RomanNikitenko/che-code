@@ -1,5 +1,5 @@
 /**********************************************************************
- * Copyright (c) 2023 Red Hat, Inc.
+ * Copyright (c) 2023-2026 Red Hat, Inc.
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -35,32 +35,42 @@ export class DeviceAuthentication {
     this.logger.info('Remove Device Authentication Token command has been registered');
   }
 
-  async trigger(scopes = 'user:email'): Promise<string | undefined> {
-    this.logger.info(`Device Authentication is triggered for scopes: ${scopes}`);
+  async runInteractiveFlow(scopes: string[]): Promise<string> {
+    const sortedScopes = [...scopes].sort();
+    const scopeString = sortedScopes.join(' ');
+    this.logger.info(`Device Authentication: running interactive flow for scopes: ${scopeString}`);
 
-    const sessionsToRemove = await this.gitHubAuthProvider.getSessions([scopes]);
-    this.logger.info(`Device Authentication: found ${sessionsToRemove.length} existing sessions with scopes: ${scopes}`);
+    const existingSessions = await this.gitHubAuthProvider.getSessions();
+    this.logger.info(`Device Authentication: found ${existingSessions.length} existing sessions to clear`);
 
-    for (const session of sessionsToRemove) {
+    for (const session of existingSessions) {
       try {
-        this.logger.info(`Device Authentication: removing a session with scopes: ${session.scopes}`);
-
         await this.gitHubAuthProvider.removeSession(session.id);
-
-        this.logger.info(`Device Authentication: session with scopes: ${session.scopes} has been removed successfully`);
+        this.logger.info(`Device Authentication: removed session with scopes: ${session.scopes}`);
       } catch (e) {
         console.warn(e.message);
         this.logger.warn(`Device Authentication: an error happened at removing a session with scopes: ${session.scopes}`);
       }
     }
 
-    const token = await vscode.commands.executeCommand<string>('github-authentication.device-code-flow');
-    this.logger.info(`Device Authentication: token for scopes: ${scopes} has been generated successfully`);
+    const token = await vscode.commands.executeCommand<string>('github-authentication.device-code-flow', scopeString);
+    if (!token) {
+      throw new Error('Device authentication was cancelled or failed');
+    }
+
+    this.logger.info(`Device Authentication: token for scopes: ${scopeString} has been generated successfully`);
+    await this.githubService.persistDeviceAuthToken(token);
+    return token;
+  }
+
+  async trigger(): Promise<string | undefined> {
+    const scopes = ['user:email'];
+    this.logger.info(`Device Authentication is triggered for scopes: ${scopes.join(' ')}`);
 
     try {
-      await this.githubService.persistDeviceAuthToken(token);
-      await this.gitHubAuthProvider.createSession([scopes]);
-      this.onTokenGenerated(scopes);
+      const token = await this.runInteractiveFlow(scopes);
+      await this.gitHubAuthProvider.createSession(scopes);
+      this.onTokenGenerated(scopes.join(' '));
 
       return token;
     } catch (error) {

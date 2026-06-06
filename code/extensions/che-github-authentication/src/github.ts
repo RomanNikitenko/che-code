@@ -13,10 +13,11 @@
 import { inject, injectable } from 'inversify';
 import { v4 } from 'uuid';
 import * as vscode from 'vscode';
+import type { DeviceAuthentication } from './device-authentication';
 import { ErrorHandler } from './error-handler';
 import { ExtensionContext } from './extension-context';
 import { Logger } from './logger';
-import { arrayEquals } from './utils';
+import { arrayEquals, hasAllScopes } from './utils';
 
 export interface GithubUser {
   login: string;
@@ -42,6 +43,8 @@ export class GitHubAuthProvider implements vscode.AuthenticationProvider {
     return this.sessionChangeEmitter.event;
   }
 
+  private deviceAuthentication?: DeviceAuthentication;
+
   constructor(
     @inject(Logger) private logger: Logger,
     @inject(ErrorHandler) private errorHandler: ErrorHandler,
@@ -49,6 +52,10 @@ export class GitHubAuthProvider implements vscode.AuthenticationProvider {
     @inject(Symbol.for('GithubServiceInstance')) private githubService: GithubService
   ) {
     this.sessions = this.extensionContext.getContext().workspaceState.get('sessions') || [];
+  }
+
+  setDeviceAuthentication(deviceAuthentication: DeviceAuthentication): void {
+    this.deviceAuthentication = deviceAuthentication;
   }
 
   async getSessions(sessionScopes?: string[]): Promise<vscode.AuthenticationSession[]> {
@@ -74,14 +81,13 @@ export class GitHubAuthProvider implements vscode.AuthenticationProvider {
 
   async createSession(scopes: string[]): Promise<vscode.AuthenticationSession> {
     this.logger.info(`GitHubAuthProvider: CREATE SESSION for scopes: ${JSON.stringify(scopes)}`);
-    let token = '';
+    const sortedScopes = [...scopes].sort();
+
+    let token: string;
     try {
-      token = await this.githubService.getToken();
+      token = await this.resolveToken(sortedScopes);
     } catch (error) {
-      this.logger.error(`GitHubAuthProvider: an error happened at session creation (get token step): ${error.message}`);
-
-      this.errorHandler.onUnauthorizedError();
-
+      this.logger.error(`GitHubAuthProvider: an error happened at session creation (resolve token step): ${error.message}`);
       throw new Error(error.message);
     }
 
@@ -92,9 +98,16 @@ export class GitHubAuthProvider implements vscode.AuthenticationProvider {
       this.logger.error(`GitHubAuthProvider: an error happened at session creation (get user step): ${error.message}`);
 
       if (error && error.response && error.response.status === 401) {
-        this.errorHandler.onUnauthorizedError();
+        try {
+          token = await this.getDeviceAuthentication().runInteractiveFlow(sortedScopes);
+          githubUser = await this.githubService.getUser();
+        } catch (authError) {
+          this.errorHandler.onUnauthorizedError();
+          throw new Error(authError.message);
+        }
+      } else {
+        throw new Error(error.message);
       }
-      throw new Error(error.message);
     }
 
     const session = {
@@ -116,6 +129,28 @@ export class GitHubAuthProvider implements vscode.AuthenticationProvider {
 
     this.logger.info(`GitHubAuthProvider: session was created successfully for scopes: ${JSON.stringify(scopes)}`);
     return session;
+  }
+
+  private async resolveToken(sortedScopes: string[]): Promise<string> {
+    try {
+      const token = await this.githubService.getToken();
+      const existingScopes = await this.githubService.getTokenScopes(token);
+      if (!hasAllScopes(existingScopes, sortedScopes)) {
+        this.logger.info(`GitHubAuthProvider: token lacks required scopes, starting device flow`);
+        return await this.getDeviceAuthentication().runInteractiveFlow(sortedScopes);
+      }
+      return token;
+    } catch (error) {
+      this.logger.info(`GitHubAuthProvider: no token available, starting device flow`);
+      return await this.getDeviceAuthentication().runInteractiveFlow(sortedScopes);
+    }
+  }
+
+  private getDeviceAuthentication(): DeviceAuthentication {
+    if (!this.deviceAuthentication) {
+      throw new Error('Device authentication is not initialized');
+    }
+    return this.deviceAuthentication;
   }
 
   async removeSession(id: string) {

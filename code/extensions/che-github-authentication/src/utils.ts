@@ -33,3 +33,7 @@ export function createLabelsSelector(labels: { [key: string]: string; }): string
     .map(([key, value]) => `${key}=${value}`)
     .join(',');
 }
+
+export function hasAllScopes(existingScopes: string[], requestedScopes: string[]): boolean {
+  return requestedScopes.every(scope => existingScopes.includes(scope));
+}
