@@ -17,7 +17,7 @@ import type { DeviceAuthentication } from './device-authentication';
 import { ErrorHandler } from './error-handler';
 import { ExtensionContext } from './extension-context';
 import { Logger } from './logger';
-import { arrayEquals, hasAllScopes } from './utils';
+import { arrayEquals, getMatchingHydrationScopeBundles, hasAllScopes, isUnauthorizedError } from './utils';
 
 export interface GithubUser {
   login: string;
@@ -36,8 +36,8 @@ export interface GithubService {
 
 @injectable()
 export class GitHubAuthProvider implements vscode.AuthenticationProvider {
-  private readonly sessions: vscode.AuthenticationSession[];
   private readonly sessionChangeEmitter = new vscode.EventEmitter<vscode.AuthenticationProviderAuthenticationSessionsChangeEvent>();
+  private sessionsPromise: Promise<vscode.AuthenticationSession[]>;
 
   get onDidChangeSessions() {
     return this.sessionChangeEmitter.event;
@@ -51,31 +51,80 @@ export class GitHubAuthProvider implements vscode.AuthenticationProvider {
     @inject(ExtensionContext) private extensionContext: ExtensionContext,
     @inject(Symbol.for('GithubServiceInstance')) private githubService: GithubService
   ) {
-    this.sessions = this.extensionContext.getContext().workspaceState.get('sessions') || [];
+    const storedSessions: vscode.AuthenticationSession[] = this.extensionContext.getContext().workspaceState.get('sessions') || [];
+    this.sessionsPromise = Promise.resolve([...storedSessions]);
   }
 
   setDeviceAuthentication(deviceAuthentication: DeviceAuthentication): void {
     this.deviceAuthentication = deviceAuthentication;
   }
 
-  async getSessions(sessionScopes?: string[]): Promise<vscode.AuthenticationSession[]> {
-    this.logger.info(`GitHubAuthProvider: GET SESSIONS for scopes: ${sessionScopes}`);
-
-    const sortedScopes = sessionScopes?.sort() || [];
-    const filteredSessions = sortedScopes.length
-      ? this.sessions.filter(session => arrayEquals([...session.scopes].sort(), sortedScopes))
-      : this.sessions;
-
-    for (const session of filteredSessions) {
+  async hydrateFromK8sToken(): Promise<void> {
+    let sessions = await this.sessionsPromise;
+    if (sessions.length > 0) {
       try {
-        await this.githubService.getTokenScopes(session.accessToken);
-      } catch (e) {
-        filteredSessions.splice(this.sessions.findIndex(s => s.id === session.id), 1);
-        this.logger.info(`GitHubAuthProvider: GET sessions - removing one session for scopes: ${sessionScopes}`);
-        console.warn(e.message);
+        await this.githubService.getTokenScopes(sessions[0].accessToken);
+        this.logger.trace('GitHubAuthProvider: existing session token is valid');
+        return;
+      } catch (error) {
+        if (isUnauthorizedError(error)) {
+          this.logger.warn('GitHubAuthProvider: existing session token is not valid, clearing sessions');
+          const removed = [...sessions];
+          await this.storeSessions([]);
+          this.sessionChangeEmitter.fire({ added: [], removed, changed: [] });
+          sessions = [];
+        } else {
+          this.logger.trace(`GitHubAuthProvider: session validation skipped: ${(error as Error).message}`);
+          return;
+        }
       }
     }
-    this.logger.info(`GitHubAuthProvider: GET sessions - found ${filteredSessions.length} sessions for scopes: ${sessionScopes}`);
+
+    try {
+      const token = await this.githubService.getToken();
+      const tokenScopes = await this.githubService.getTokenScopes(token);
+      if (tokenScopes.length === 0) {
+        this.logger.trace('GitHubAuthProvider: hydrate skipped, token has no scopes');
+        return;
+      }
+
+      const githubUser = await this.githubService.getUser();
+      const matchingBundles = getMatchingHydrationScopeBundles(tokenScopes);
+      if (matchingBundles.length === 0) {
+        this.logger.trace('GitHubAuthProvider: hydrate skipped, token scopes match no known bundle');
+        return;
+      }
+
+      const account = { label: githubUser.login, id: githubUser.id.toString() };
+      const hydratedSessions = matchingBundles.map(scopes => ({
+        id: v4(),
+        accessToken: token,
+        account,
+        scopes,
+      }));
+
+      await this.storeSessions(hydratedSessions);
+      this.sessionChangeEmitter.fire({ added: hydratedSessions, removed: [], changed: [] });
+      this.logger.info(`GitHubAuthProvider: hydrated ${hydratedSessions.length} session(s) from K8s token`);
+    } catch (error) {
+      if (isUnauthorizedError(error)) {
+        this.logger.warn('GitHubAuthProvider: hydrate failed, token is not valid');
+      } else {
+        this.logger.trace(`GitHubAuthProvider: hydrate skipped: ${(error as Error).message}`);
+      }
+    }
+  }
+
+  async getSessions(sessionScopes?: string[]): Promise<vscode.AuthenticationSession[]> {
+    this.logger.trace(`GitHubAuthProvider: GET SESSIONS for scopes: ${sessionScopes}`);
+
+    const sessions = await this.sessionsPromise;
+    const sortedScopes = sessionScopes ? [...sessionScopes].sort() : [];
+    const filteredSessions = sortedScopes.length
+      ? sessions.filter(session => arrayEquals([...session.scopes].sort(), sortedScopes))
+      : [...sessions];
+
+    this.logger.trace(`GitHubAuthProvider: GET sessions - found ${filteredSessions.length} sessions for scopes: ${sessionScopes}`);
     return filteredSessions;
   }
 
@@ -87,45 +136,48 @@ export class GitHubAuthProvider implements vscode.AuthenticationProvider {
     try {
       token = await this.resolveToken(sortedScopes);
     } catch (error) {
-      this.logger.error(`GitHubAuthProvider: an error happened at session creation (resolve token step): ${error.message}`);
-      throw new Error(error.message);
+      this.logger.error(`GitHubAuthProvider: an error happened at session creation (resolve token step): ${(error as Error).message}`);
+      throw new Error((error as Error).message);
     }
 
-    let githubUser;
+    let githubUser: GithubUser;
     try {
       githubUser = await this.githubService.getUser();
     } catch (error) {
-      this.logger.error(`GitHubAuthProvider: an error happened at session creation (get user step): ${error.message}`);
+      this.logger.error(`GitHubAuthProvider: an error happened at session creation (get user step): ${(error as Error).message}`);
 
-      if (error && error.response && error.response.status === 401) {
+      if (isUnauthorizedError(error)) {
         try {
           token = await this.getDeviceAuthentication().runInteractiveFlow(sortedScopes);
           githubUser = await this.githubService.getUser();
         } catch (authError) {
           this.errorHandler.onUnauthorizedError();
-          throw new Error(authError.message);
+          throw new Error((authError as Error).message);
         }
       } else {
-        throw new Error(error.message);
+        throw new Error((error as Error).message);
       }
     }
 
-    const session = {
+    const sessions = await this.sessionsPromise;
+    const session: vscode.AuthenticationSession = {
       id: v4(),
       accessToken: token,
       account: { label: githubUser.login, id: githubUser.id.toString() },
       scopes,
     };
 
-    const sessionIndex = this.sessions.findIndex(s => s.id === session.id);
+    const sessionIndex = sessions.findIndex(s => arrayEquals([...s.scopes].sort(), sortedScopes));
+    const removed: vscode.AuthenticationSession[] = [];
+    const updatedSessions = [...sessions];
     if (sessionIndex > -1) {
-      this.sessions.splice(sessionIndex, 1, session);
+      removed.push(...updatedSessions.splice(sessionIndex, 1, session));
     } else {
-      this.sessions.push(session);
+      updatedSessions.push(session);
     }
 
-    this.extensionContext.getContext().workspaceState.update('sessions', this.sessions);
-    this.sessionChangeEmitter.fire({ added: [session], removed: [], changed: [] });
+    await this.storeSessions(updatedSessions);
+    this.sessionChangeEmitter.fire({ added: [session], removed, changed: [] });
 
     this.logger.info(`GitHubAuthProvider: session was created successfully for scopes: ${JSON.stringify(scopes)}`);
     return session;
@@ -141,7 +193,11 @@ export class GitHubAuthProvider implements vscode.AuthenticationProvider {
       }
       return token;
     } catch (error) {
-      this.logger.info(`GitHubAuthProvider: no token available, starting device flow`);
+      if (isUnauthorizedError(error)) {
+        this.logger.info(`GitHubAuthProvider: token is not valid, starting device flow`);
+      } else {
+        this.logger.info(`GitHubAuthProvider: no token available, starting device flow`);
+      }
       return await this.getDeviceAuthentication().runInteractiveFlow(sortedScopes);
     }
   }
@@ -153,13 +209,19 @@ export class GitHubAuthProvider implements vscode.AuthenticationProvider {
     return this.deviceAuthentication;
   }
 
+  private async storeSessions(sessions: vscode.AuthenticationSession[]): Promise<void> {
+    this.sessionsPromise = Promise.resolve(sessions);
+    await this.extensionContext.getContext().workspaceState.update('sessions', sessions);
+  }
+
   async removeSession(id: string) {
     this.logger.info(`GitHubAuthProvider: REMOVE SESSION `);
 
-    const session = this.sessions.find(s => s.id === id);
+    const sessions = await this.sessionsPromise;
+    const session = sessions.find(s => s.id === id);
     if (session) {
-      this.sessions.splice(this.sessions.findIndex(s => s.id === id), 1);
-      this.extensionContext.getContext().workspaceState.update('sessions', this.sessions);
+      const updatedSessions = sessions.filter(s => s.id !== id);
+      await this.storeSessions(updatedSessions);
       this.sessionChangeEmitter.fire({ added: [], removed: [session], changed: [] });
 
       this.logger.info(`GitHubAuthProvider: session was removed successfully! `);
