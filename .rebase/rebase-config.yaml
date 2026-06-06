@@ -3,13 +3,13 @@
 # (PREVIOUS_UPSTREAM_VERSION, CURRENT_UPSTREAM_VERSION) stay in rebase.sh.
 
 # Remote to push the alignment branch and create the PR against
-target_remote: "https://github.com/che-incubator/che-code"
+target_remote: "https://github.com/RomanNikitenko/che-code.git"
 
 # PR testing configuration
 testing:
   instance_url: "https://che-dogfooding.apps.che-dev.x6e0.p1.openshiftapps.com"
   sample_repo: "https://github.com/RomanNikitenko/web-nodejs-sample"
-  editor_image_base: "quay.io/che-incubator-pull-requests/che-code"
+  editor_image_base: "quay.io/rnikitenko/che-code"
   images:
     - label: "udi"
       entries:
