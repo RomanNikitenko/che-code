@@ -34,4 +34,7 @@ export interface GithubService {
 
     getUser(): Promise<GithubUser>;
     getTokenScopes(token: string): Promise<string[]>;
+
+    /** True when the active token comes from the device-authentication secret (OAuth), not a workspace PAT. */
+    isDeviceAuthToken(): Promise<boolean>;
 }

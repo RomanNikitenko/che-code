@@ -67,6 +67,10 @@ export class GithubServiceImpl implements GithubService {
     return result.scopes;
   }
 
+  async isDeviceAuthToken(): Promise<boolean> {
+    return (await this.getDeviceAuthToken()) !== undefined;
+  }
+
   private async fetchGithubUser(token: string): Promise<{ user: GithubUser; scopes: string[] }> {
     try {
       this.logger.info('Github Service: fetching GitHub user using fetch...');

@@ -40,25 +40,23 @@ export class DeviceAuthentication {
     const scopeString = sortedScopes.join(' ');
     this.logger.info(`Device Authentication: running interactive flow for scopes: ${scopeString}`);
 
-    const existingSessions = await this.gitHubAuthProvider.getSessions();
-    this.logger.info(`Device Authentication: found ${existingSessions.length} existing sessions to clear`);
-
-    for (const session of existingSessions) {
-      try {
-        await this.gitHubAuthProvider.removeSession(session.id);
-        this.logger.info(`Device Authentication: removed session with scopes: ${session.scopes}`);
-      } catch (e) {
-        console.warn(e.message);
-        this.logger.warn(`Device Authentication: an error happened at removing a session with scopes: ${session.scopes}`);
-      }
-    }
-
     const token = await vscode.commands.executeCommand<string>('github-authentication.device-code-flow', scopeString);
     if (!token) {
       throw new Error('Device authentication was cancelled or failed');
     }
 
     this.logger.info(`Device Authentication: token for scopes: ${scopeString} has been generated successfully`);
+
+    const existingSessions = await this.gitHubAuthProvider.getSessions();
+    this.logger.info(`Device Authentication: clearing ${existingSessions.length} existing sessions`);
+    for (const session of existingSessions) {
+      try {
+        await this.gitHubAuthProvider.removeSession(session.id);
+      } catch (e) {
+        this.logger.warn(`Device Authentication: failed to remove session: ${e.message}`);
+      }
+    }
+
     await this.githubService.persistDeviceAuthToken(token);
     return token;
   }
