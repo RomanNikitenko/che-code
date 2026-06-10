@@ -295,6 +295,17 @@ export class GitHubAuthProvider implements vscode.AuthenticationProvider {
     await this.extensionContext.getContext().secrets.store(this.storageKey, JSON.stringify(sessions));
   }
 
+  async clearAllSessions(): Promise<void> {
+    const sessions = await this.sessionsPromise;
+    if (sessions.length === 0) {
+      return;
+    }
+    this.logger.info(`GitHubAuthProvider: clearing all ${sessions.length} sessions`);
+    const removed = [...sessions];
+    await this.storeSessions([]);
+    this.sessionChangeEmitter.fire({ added: [], removed, changed: [] });
+  }
+
   async removeSession(id: string) {
     this.logger.info(`GitHubAuthProvider: REMOVE SESSION `);
 

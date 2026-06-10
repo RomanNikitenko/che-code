@@ -47,15 +47,7 @@ export class DeviceAuthentication {
 
     this.logger.info(`Device Authentication: token for scopes: ${scopeString} has been generated successfully`);
 
-    const existingSessions = await this.gitHubAuthProvider.getSessions();
-    this.logger.info(`Device Authentication: clearing ${existingSessions.length} existing sessions`);
-    for (const session of existingSessions) {
-      try {
-        await this.gitHubAuthProvider.removeSession(session.id);
-      } catch (e) {
-        this.logger.warn(`Device Authentication: failed to remove session: ${e.message}`);
-      }
-    }
+    await this.gitHubAuthProvider.clearAllSessions();
 
     this.githubService.persistDeviceAuthToken(token);
     return token;
