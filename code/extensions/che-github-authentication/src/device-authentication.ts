@@ -57,7 +57,7 @@ export class DeviceAuthentication {
       }
     }
 
-    await this.githubService.persistDeviceAuthToken(token);
+    this.githubService.persistDeviceAuthToken(token);
     return token;
   }
 

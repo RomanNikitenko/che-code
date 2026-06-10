@@ -33,9 +33,16 @@ const SCM_URL_ATTRIBUTE = 'che.eclipse.org/scm-url';
 const GITHUB_URL = 'https://github.com';
 const GIT_CREDENTIALS_LABEL_SELECTOR: string = createLabelsSelector(GIT_CREDENTIAL_LABEL);
 
+type TokenSource = 'device-auth' | 'git-credentials-file' | 'git-credential-secret';
+
+interface TokenInfo {
+  value: string;
+  source: TokenSource;
+}
+
 @injectable()
 export class GithubServiceImpl implements GithubService {
-  private token: string | undefined;
+  private tokenInfo: TokenInfo | undefined;
 
   constructor(
     @inject(Logger) private logger: Logger,
@@ -45,19 +52,19 @@ export class GithubServiceImpl implements GithubService {
   }
 
   private checkToken(): void {
-    if (!this.token) {
+    if (!this.tokenInfo) {
       throw new Error('GitHub authentication token is not setup');
     }
   }
 
   async getToken(): Promise<string> {
     this.checkToken();
-    return this.token!;
+    return this.tokenInfo!.value;
   }
 
   async getUser(): Promise<GithubUser> {
     this.checkToken();
-    const result = await this.fetchGithubUser(this.token!);
+    const result = await this.fetchGithubUser(this.tokenInfo!.value);
     return result.user;
   }
 
@@ -68,7 +75,7 @@ export class GithubServiceImpl implements GithubService {
   }
 
   async isDeviceAuthToken(): Promise<boolean> {
-    return (await this.getDeviceAuthToken()) !== undefined;
+    return this.tokenInfo?.source === 'device-auth';
   }
 
   private async fetchGithubUser(token: string): Promise<{ user: GithubUser; scopes: string[] }> {
@@ -158,7 +165,14 @@ export class GithubServiceImpl implements GithubService {
   }
 
   async persistDeviceAuthToken(token: string): Promise<void> {
-    this.token = token;
+    this.tokenInfo = { value: token, source: 'device-auth' };
+
+    this.persistDeviceAuthTokenToK8s(token).catch(err =>
+      this.logger.error(`Github Service: failed to persist device auth token to K8s: ${err.message}`)
+    );
+  }
+
+  private async persistDeviceAuthTokenToK8s(token: string): Promise<void> {
     this.logger.info(`Github Service: adding token to the device-authentication secret...`);
 
     const deviceAuthSecrets = await this.k8sService.getSecret(DEVICE_AUTHENTICATION_LABEL_SELECTOR);
@@ -182,13 +196,14 @@ export class GithubServiceImpl implements GithubService {
 
     const updatedSecret = { ...deviceAuthSecret, data };
     const name = deviceAuthSecret.metadata?.name || `device-authentication-secret-${randomString(5).toLowerCase()}`;
-    this.k8sService.replaceNamespacedSecret(name, updatedSecret);
+    await this.k8sService.replaceNamespacedSecret(name, updatedSecret);
 
     this.logger.info(`Github Service: device-authentication secret was updated successfully!`);
   }
 
   async removeDeviceAuthToken(): Promise<void> {
     this.logger.info(`Github Service: got request for removing a device-authentication secret`);
+
     const deviceAuthSecrets = await this.k8sService.getSecret(DEVICE_AUTHENTICATION_LABEL_SELECTOR);
     if (deviceAuthSecrets.length < 1) {
       this.logger.warn('Github Service: device-authentication secret not found');
@@ -210,18 +225,24 @@ export class GithubServiceImpl implements GithubService {
 
     const deviceAuthToken = await this.getDeviceAuthToken();
     if (deviceAuthToken) {
-      this.token = deviceAuthToken;
+      this.tokenInfo = { value: deviceAuthToken, source: 'device-auth' };
       this.logger.info('Github Service: Device Authentication token is used');
       return;
     }
 
     const gitCredentialTokens = await this.getGitCredentialTokens();
     if (gitCredentialTokens.length === 1) {
-      this.token = gitCredentialTokens[0];
+      this.tokenInfo = { value: gitCredentialTokens[0], source: 'git-credentials-file' };
       this.logger.info('Github Service: git-credential token is used');
       return;
     }
-    this.token = await this.getTokenFromSecret();
+
+    const secretToken = await this.getTokenFromSecret();
+    if (secretToken) {
+      this.tokenInfo = { value: secretToken, source: 'git-credential-secret' };
+    } else {
+      this.tokenInfo = undefined;
+    }
   }
 
   /* Extracts a token from the device-authentication secret */
