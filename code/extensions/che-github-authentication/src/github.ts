@@ -306,6 +306,33 @@ export class GitHubAuthProvider implements vscode.AuthenticationProvider {
     this.sessionChangeEmitter.fire({ added: [], removed, changed: [] });
   }
 
+  async clearDeviceAuthSessions(): Promise<void> {
+    const sessions = await this.sessionsPromise;
+    if (sessions.length === 0) {
+      return;
+    }
+
+    const isDeviceAuth = await this.githubService.isDeviceAuthToken();
+    if (!isDeviceAuth) {
+      this.logger.info('GitHubAuthProvider: skipping session clearing, existing sessions are from K8s token');
+      return;
+    }
+
+    try {
+      const currentToken = await this.githubService.getToken();
+      const kept = sessions.filter(s => s.accessToken !== currentToken);
+      const removed = sessions.filter(s => s.accessToken === currentToken);
+
+      if (removed.length > 0) {
+        this.logger.info(`GitHubAuthProvider: clearing ${removed.length} device-auth sessions, keeping ${kept.length} K8s sessions`);
+        await this.storeSessions(kept);
+        this.sessionChangeEmitter.fire({ added: [], removed, changed: [] });
+      }
+    } catch {
+      this.logger.warn('GitHubAuthProvider: unable to determine device-auth token, keeping existing sessions');
+    }
+  }
+
   async removeSession(id: string) {
     this.logger.info(`GitHubAuthProvider: REMOVE SESSION `);
 
