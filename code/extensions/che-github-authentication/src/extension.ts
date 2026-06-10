@@ -49,7 +49,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
     vscode.authentication.registerAuthenticationProvider('github', 'GitHub', authenticationProvider);
 
-    authenticationProvider.hydrateFromK8sToken();
+    await authenticationProvider.hydrateFromK8sToken();
 }
 
 export function deactivate(): void {

@@ -85,7 +85,17 @@ export class GitHubAuthProvider implements vscode.AuthenticationProvider {
       }
     }
 
-    await this.doHydrate();
+    try {
+      const token = await this.githubService.getToken();
+      await this.doHydrateWithToken(token);
+      return;
+    } catch {
+      this.logger.info('GitHubAuthProvider: token not immediately available, starting background hydration');
+    }
+
+    this.doHydrate().catch(err =>
+      this.logger.error(`GitHubAuthProvider: background hydration failed: ${(err as Error).message}`)
+    );
   }
 
   private async waitForToken(timeoutMs: number, intervalMs: number): Promise<string | undefined> {
@@ -106,7 +116,10 @@ export class GitHubAuthProvider implements vscode.AuthenticationProvider {
       this.logger.warn('GitHubAuthProvider: hydrate failed, token not available after 30s');
       return;
     }
+    await this.doHydrateWithToken(token);
+  }
 
+  private async doHydrateWithToken(token: string): Promise<void> {
     try {
       const tokenScopes = await this.githubService.getTokenScopes(token);
       if (tokenScopes.length === 0) {
