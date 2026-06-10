@@ -47,17 +47,21 @@ export class GitHubAuthProvider implements vscode.AuthenticationProvider {
 
   private deviceAuthentication?: DeviceAuthentication;
 
+  private readonly storageKey: string;
+
   constructor(
     @inject(Logger) private logger: Logger,
     @inject(ErrorHandler) private errorHandler: ErrorHandler,
     @inject(ExtensionContext) private extensionContext: ExtensionContext,
     @inject(Symbol.for('GithubServiceInstance')) private githubService: GithubService
   ) {
+    const workspaceId = process.env.DEVWORKSPACE_ID || 'default';
+    this.storageKey = `sessions:${workspaceId}`;
     this.sessionsPromise = this.readSessions();
   }
 
   private async readSessions(): Promise<vscode.AuthenticationSession[]> {
-    const raw = await this.extensionContext.getContext().secrets.get('sessions');
+    const raw = await this.extensionContext.getContext().secrets.get(this.storageKey);
     if (raw) {
       try {
         return JSON.parse(raw);
@@ -288,7 +292,7 @@ export class GitHubAuthProvider implements vscode.AuthenticationProvider {
 
   private async storeSessions(sessions: vscode.AuthenticationSession[]): Promise<void> {
     this.sessionsPromise = Promise.resolve(sessions);
-    await this.extensionContext.getContext().secrets.store('sessions', JSON.stringify(sessions));
+    await this.extensionContext.getContext().secrets.store(this.storageKey, JSON.stringify(sessions));
   }
 
   async removeSession(id: string) {
