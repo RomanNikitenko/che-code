@@ -77,6 +77,11 @@ export class GitHubAuthProvider implements vscode.AuthenticationProvider {
   }
 
   async hydrateFromK8sToken(): Promise<void> {
+    await Promise.race([
+      this.githubService.whenReady,
+      new Promise<void>(resolve => setTimeout(resolve, 5000))
+    ]);
+
     let sessions = await this.sessionsPromise;
     if (sessions.length > 0) {
       try {
@@ -100,11 +105,6 @@ export class GitHubAuthProvider implements vscode.AuthenticationProvider {
         }
       }
     }
-
-    await Promise.race([
-      this.githubService.whenReady,
-      new Promise<void>(resolve => setTimeout(resolve, 5000))
-    ]);
 
     try {
       const token = await this.githubService.getToken();
