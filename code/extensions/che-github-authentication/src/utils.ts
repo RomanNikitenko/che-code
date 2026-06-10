@@ -38,22 +38,8 @@ export function hasAllScopes(existingScopes: string[], requestedScopes: string[]
   return requestedScopes.every(scope => existingScopes.includes(scope));
 }
 
-/**
- * Marker scope on sessions backed by a workspace PAT. Copilot requests exact scope lists and
- * will not match these sessions; other extensions use superset matching in getSessions.
- */
-export const WORKSPACE_PAT_SCOPE = 'che:workspace-pat';
-
-export function isWorkspacePatSession(scopes: readonly string[]): boolean {
-  return scopes.includes(WORKSPACE_PAT_SCOPE);
-}
-
 export function sessionMatchesRequestedScopes(sessionScopes: readonly string[], requestedScopes: readonly string[]): boolean {
-  if (isWorkspacePatSession(sessionScopes)) {
-    const tokenScopes = sessionScopes.filter(scope => scope !== WORKSPACE_PAT_SCOPE);
-    return hasAllScopes(tokenScopes, [...requestedScopes]);
-  }
-  return arrayEquals([...sessionScopes].sort(), [...requestedScopes].sort());
+  return hasAllScopes([...sessionScopes], [...requestedScopes]);
 }
 
 /** Scope bundles used by Copilot / github / GHPRI / Agent Host — session keys match vanilla createSession. */

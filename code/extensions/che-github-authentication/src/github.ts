@@ -17,7 +17,7 @@ import type { DeviceAuthentication } from './device-authentication';
 import { ErrorHandler } from './error-handler';
 import { ExtensionContext } from './extension-context';
 import { Logger } from './logger';
-import { getMatchingHydrationScopeBundles, hasAllScopes, isUnauthorizedError, isWorkspacePatSession, sessionMatchesRequestedScopes, WORKSPACE_PAT_SCOPE } from './utils';
+import { getMatchingHydrationScopeBundles, hasAllScopes, isUnauthorizedError, sessionMatchesRequestedScopes } from './utils';
 
 export interface GithubUser {
   login: string;
@@ -65,15 +65,12 @@ export class GitHubAuthProvider implements vscode.AuthenticationProvider {
     if (sessions.length > 0) {
       try {
         await this.githubService.getTokenScopes(sessions[0].accessToken);
-        const isDeviceAuthToken = await this.githubService.isDeviceAuthToken();
-        const sessionsNeedRetag = isDeviceAuthToken
-          ? sessions.some(session => isWorkspacePatSession(session.scopes))
-          : sessions.some(session => !isWorkspacePatSession(session.scopes));
-        if (!sessionsNeedRetag) {
-          this.logger.info('GitHubAuthProvider: existing session token is valid');
+        const currentToken = await this.githubService.getToken();
+        if (sessions[0].accessToken === currentToken) {
+          this.logger.info('GitHubAuthProvider: existing sessions are up to date');
           return;
         }
-        this.logger.info('GitHubAuthProvider: re-hydrating sessions to match current token source');
+        this.logger.info('GitHubAuthProvider: token changed, re-hydrating sessions');
       } catch (error) {
         if (isUnauthorizedError(error)) {
           this.logger.warn('GitHubAuthProvider: existing session token is not valid, clearing sessions');
@@ -124,19 +121,17 @@ export class GitHubAuthProvider implements vscode.AuthenticationProvider {
         return;
       }
 
-      const isDeviceAuthToken = await this.githubService.isDeviceAuthToken();
       const account = { label: githubUser.login, id: githubUser.id.toString() };
       const hydratedSessions = matchingBundles.map(scopes => ({
         id: v4(),
         accessToken: token,
         account,
-        scopes: isDeviceAuthToken ? scopes : [...scopes, WORKSPACE_PAT_SCOPE],
+        scopes,
       }));
 
       await this.storeSessions(hydratedSessions);
       this.sessionChangeEmitter.fire({ added: hydratedSessions, removed: [], changed: [] });
-      const tokenSource = isDeviceAuthToken ? 'device authentication' : 'workspace PAT';
-      this.logger.info(`GitHubAuthProvider: hydrated ${hydratedSessions.length} session(s) from K8s ${tokenSource}`);
+      this.logger.info(`GitHubAuthProvider: hydrated ${hydratedSessions.length} session(s) from K8s token`);
     } catch (error) {
       if (isUnauthorizedError(error)) {
         this.logger.warn('GitHubAuthProvider: hydrate failed, token is not valid');
@@ -191,12 +186,11 @@ export class GitHubAuthProvider implements vscode.AuthenticationProvider {
     }
 
     const sessions = await this.sessionsPromise;
-    const isDeviceAuthToken = await this.githubService.isDeviceAuthToken();
     const session: vscode.AuthenticationSession = {
       id: v4(),
       accessToken: token,
       account: { label: githubUser.login, id: githubUser.id.toString() },
-      scopes: isDeviceAuthToken ? scopes : [...scopes, WORKSPACE_PAT_SCOPE],
+      scopes,
     };
 
     const sessionIndex = sessions.findIndex(s => sessionMatchesRequestedScopes(s.scopes, sortedScopes));
