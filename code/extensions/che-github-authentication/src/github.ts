@@ -27,6 +27,7 @@ export interface GithubUser {
 }
 
 export interface GithubService {
+  readonly whenReady: Promise<void>;
   getToken(): Promise<string>;
   persistDeviceAuthToken(token: string): Promise<void>;
   removeDeviceAuthToken(): Promise<void>;
@@ -85,12 +86,17 @@ export class GitHubAuthProvider implements vscode.AuthenticationProvider {
       }
     }
 
+    await Promise.race([
+      this.githubService.whenReady,
+      new Promise<void>(resolve => setTimeout(resolve, 5000))
+    ]);
+
     try {
       const token = await this.githubService.getToken();
       await this.doHydrateWithToken(token);
       return;
     } catch {
-      this.logger.info('GitHubAuthProvider: token not immediately available, starting background hydration');
+      this.logger.info('GitHubAuthProvider: no token available after initialization');
     }
 
     this.doHydrate().catch(err =>

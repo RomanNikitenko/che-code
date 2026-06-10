@@ -43,12 +43,13 @@ interface TokenInfo {
 @injectable()
 export class GithubServiceImpl implements GithubService {
   private tokenInfo: TokenInfo | undefined;
+  readonly whenReady: Promise<void>;
 
   constructor(
     @inject(Logger) private logger: Logger,
     @inject(K8SServiceImpl) private readonly k8sService: K8SServiceImpl
   ) {
-    this.initializeToken();
+    this.whenReady = this.initializeToken();
   }
 
   private checkToken(): void {

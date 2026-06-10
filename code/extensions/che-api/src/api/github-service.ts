@@ -20,6 +20,9 @@ export interface GithubUser {
 export const GithubService = Symbol('GithubService');
 
 export interface GithubService {
+    /** Resolves when the initial token extraction is complete (token may or may not be available). */
+    readonly whenReady: Promise<void>;
+
     getToken(): Promise<string>;
 
     /**
