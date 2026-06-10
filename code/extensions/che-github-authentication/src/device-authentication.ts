@@ -15,6 +15,7 @@ import * as vscode from 'vscode';
 import { ExtensionContext } from './extension-context';
 import { GitHubAuthProvider, GithubService } from './github';
 import { CHANNEL_NAME, Logger } from './logger';
+import { DEVICE_AUTH_SCOPES } from './utils';
 
 @injectable()
 export class DeviceAuthentication {
@@ -54,7 +55,7 @@ export class DeviceAuthentication {
   }
 
   async trigger(): Promise<string | undefined> {
-    const scopes = ['user:email'];
+    const scopes = [...DEVICE_AUTH_SCOPES];
     this.logger.info(`Device Authentication is triggered for scopes: ${scopes.join(' ')}`);
 
     try {

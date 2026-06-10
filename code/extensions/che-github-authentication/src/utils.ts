@@ -42,6 +42,9 @@ export function sessionMatchesRequestedScopes(sessionScopes: readonly string[], 
   return hasAllScopes([...sessionScopes], [...requestedScopes]);
 }
 
+/** Matches product.json defaultChatAgent.providerScopes[0] and Copilot GITHUB_SCOPE_ALIGNED. */
+export const DEVICE_AUTH_SCOPES = ['read:user', 'user:email', 'repo', 'workflow'] as const;
+
 /** Scope bundles used by Copilot / github / GHPRI / Agent Host — session keys match vanilla createSession. */
 export const HYDRATION_SCOPE_BUNDLES: readonly string[][] = [
   ['read:user', 'user:email', 'repo', 'workflow', 'project', 'read:org'],
