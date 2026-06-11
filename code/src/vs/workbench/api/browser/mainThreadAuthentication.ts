@@ -235,9 +235,12 @@ export class MainThreadAuthentication extends Disposable implements MainThreadAu
 	}
 
 	async $sendDidChangeSessions(providerId: string, event: AuthenticationSessionsChangeEvent): Promise<void> {
+		this.logService.info(`[auth-event] $sendDidChangeSessions: provider=${providerId}, added=${event.added?.length ?? 0}, removed=${event.removed?.length ?? 0}, changed=${event.changed?.length ?? 0}`);
 		const obj = this._registrations.get(providerId);
 		if (obj instanceof Emitter) {
 			obj.fire(event);
+		} else {
+			this.logService.warn(`[auth-event] $sendDidChangeSessions: provider=${providerId} NOT registered yet, event dropped!`);
 		}
 	}
 
@@ -390,6 +393,8 @@ export class MainThreadAuthentication extends Disposable implements MainThreadAu
 		const sessions = await this.authenticationService.getSessions(providerId, scopeListOrRequest, { account: options.account, authorizationServer }, true);
 		const provider = this.authenticationService.getProvider(providerId);
 
+		this.logService.info(`[doGetSession] provider=${providerId}, ext=${extensionId}, scopes=${Array.isArray(scopeListOrRequest) ? scopeListOrRequest.join(',') : 'wwwAuth'}, sessions=${sessions.length}, silent=${!!options.silent}, createIfNone=${!!options.createIfNone}`);
+
 		// Error cases
 		if (options.forceNewSession && options.createIfNone) {
 			throw new Error('Invalid combination of options. Please remove one of the following: forceNewSession, createIfNone');
@@ -417,12 +422,20 @@ export class MainThreadAuthentication extends Disposable implements MainThreadAu
 		// Check if the sessions we have are valid
 		if (!options.forceNewSession && sessions.length) {
 			// If we have an existing session preference, use that. If not, we'll return any valid session at the end of this function.
-			if (matchingAccountPreferenceSession && this.authenticationAccessService.isAccessAllowed(providerId, matchingAccountPreferenceSession.account.label, extensionId)) {
-				return matchingAccountPreferenceSession;
+			if (matchingAccountPreferenceSession) {
+				const accessAllowed = this.authenticationAccessService.isAccessAllowed(providerId, matchingAccountPreferenceSession.account.label, extensionId);
+				this.logService.info(`[doGetSession] accountPref match: account=${matchingAccountPreferenceSession.account.label}, accessAllowed=${accessAllowed}`);
+				if (accessAllowed) {
+					return matchingAccountPreferenceSession;
+				}
 			}
 			// If we only have one account for a single auth provider, lets just check if it's allowed and return it if it is.
-			if (!provider.supportsMultipleAccounts && this.authenticationAccessService.isAccessAllowed(providerId, sessions[0].account.label, extensionId)) {
-				return sessions[0];
+			if (!provider.supportsMultipleAccounts) {
+				const accessAllowed = this.authenticationAccessService.isAccessAllowed(providerId, sessions[0].account.label, extensionId);
+				this.logService.info(`[doGetSession] singleAccount: account=${sessions[0].account.label}, accessAllowed=${accessAllowed}, supportsMultiple=${provider.supportsMultipleAccounts}`);
+				if (accessAllowed) {
+					return sessions[0];
+				}
 			}
 		}
 
@@ -485,9 +498,12 @@ export class MainThreadAuthentication extends Disposable implements MainThreadAu
 		if (!options.silent) {
 			// If there is a potential session, but the extension doesn't have access to it, use the "grant access" flow,
 			// otherwise request a new one.
+			this.logService.info(`[doGetSession] passive flow: ext=${extensionId}, sessions=${sessions.length}, requesting access`);
 			sessions.length
 				? this.authenticationExtensionsService.requestSessionAccess(providerId, extensionId, extensionName, scopeListOrRequest, sessions)
 				: await this.authenticationExtensionsService.requestNewSession(providerId, scopeListOrRequest, extensionId, extensionName);
+		} else {
+			this.logService.info(`[doGetSession] silent flow: ext=${extensionId}, sessions=${sessions.length}, returning undefined`);
 		}
 		return undefined;
 	}

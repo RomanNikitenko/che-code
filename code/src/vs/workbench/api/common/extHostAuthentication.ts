@@ -237,6 +237,7 @@ export class ExtHostAuthentication implements ExtHostAuthenticationShape {
 	$onDidChangeAuthenticationSessions(id: string, label: string, extensionIdFilter?: string[]) {
 		// Don't fire events for the internal auth providers
 		if (!id.startsWith(INTERNAL_AUTH_PROVIDER_PREFIX)) {
+			this._logService.info(`[auth-event] $onDidChangeAuthenticationSessions: provider=${id}, label=${label}, extensionIdFilter=${extensionIdFilter?.join(',') ?? 'none'}`);
 			this._onDidChangeSessions.fire({ provider: { id, label }, extensionIdFilter });
 		}
 		return Promise.resolve();
