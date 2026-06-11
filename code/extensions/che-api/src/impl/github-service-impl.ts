@@ -211,14 +211,32 @@ export class GithubServiceImpl implements GithubService {
       throw new Error('device-authentication secret not found');
     }
 
-    for (const secret of deviceAuthSecrets) {
+    await this.deleteDeviceAuthSecrets(deviceAuthSecrets);
+
+    // another token should be used by the Github Service after removing the Device Authentication token
+    this.initializeToken();
+  }
+
+  private async deleteDeviceAuthSecrets(secrets?: k8s.V1Secret[]): Promise<void> {
+    const toDelete = secrets ?? await this.k8sService.getSecret(DEVICE_AUTHENTICATION_LABEL_SELECTOR);
+    for (const secret of toDelete) {
       this.logger.info(`Github Service: removing device-authentication secret with ${secret.metadata?.name} name...`);
       await this.k8sService.deleteNamespacedSecret(secret);
       this.logger.info(`Github Service: device-authentication secret with ${secret.metadata?.name} name was deleted successfully!`);
     }
+  }
 
-    // another token should be used by the Github Service after removing the Device Authentication token
-    this.initializeToken();
+  /**
+   * Legacy device-auth tokens were created with only 'user:email' scope by the old flow.
+   * They should be removed so the PAT (if available) can be used instead.
+   */
+  private async isLegacyDeviceAuthToken(token: string): Promise<boolean> {
+    try {
+      const { scopes } = await this.fetchGithubUser(token);
+      return scopes.length === 1 && scopes[0] === 'user:email';
+    } catch {
+      return false;
+    }
   }
 
   private async initializeToken(): Promise<void> {
@@ -226,9 +244,14 @@ export class GithubServiceImpl implements GithubService {
 
     const deviceAuthToken = await this.getDeviceAuthToken();
     if (deviceAuthToken) {
-      this.tokenInfo = { value: deviceAuthToken, source: 'device-auth' };
-      this.logger.info('Github Service: Device Authentication token is used');
-      return;
+      if (await this.isLegacyDeviceAuthToken(deviceAuthToken)) {
+        this.logger.info('Github Service: legacy device-auth token detected (user:email only), removing and falling through to PAT');
+        await this.deleteDeviceAuthSecrets();
+      } else {
+        this.tokenInfo = { value: deviceAuthToken, source: 'device-auth' };
+        this.logger.info('Github Service: Device Authentication token is used');
+        return;
+      }
     }
 
     const gitCredentialTokens = await this.getGitCredentialTokens();
