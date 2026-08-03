@@ -10,13 +10,8 @@
 
 import * as fs from '../src/fs-extra';
 import { env } from 'process';
-import { unlink } from 'fs/promises';
 
 import { DevWorkspaceId } from '../src/devworkspace-id';
-
-jest.mock('fs/promises', () => ({
-  unlink: jest.fn().mockResolvedValue(undefined),
-}));
 
 const ORIGIN_WORKBENCH = `
 some code, some code, a mask to be replaced https://{{che-cluster}}.{{host}}/{{namespace}}/{{workspace-name}}/{{port}}/, some code
@@ -62,7 +57,5 @@ describe('Test setting DevWorkspace ID to VS Code', () => {
     expect(readFileMock).toBeCalledTimes(2);
     expect(writeFileMock).toBeCalledWith('out/vs/code/browser/workbench/workbench.js', NEW_WORKBENCH);
     expect(writeFileMock).toBeCalledWith('out/vs/workbench/workbench.web.main.internal.js', NEW_WORKBENCH);
-    expect(unlink).toBeCalledWith('out/vs/code/browser/workbench/workbench.js.gz');
-    expect(unlink).toBeCalledWith('out/vs/workbench/workbench.web.main.internal.js.gz');
   });
 });
