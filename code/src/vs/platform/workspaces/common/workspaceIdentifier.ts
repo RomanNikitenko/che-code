@@ -32,8 +32,13 @@ export function getSingleFolderWorkspaceIdentifier(folderUri: URI): ISingleFolde
 
 function getWorkspaceId(uri: URI): string {
 	const devWorkspaceId = getDevWorkspaceId();
+	console.log('[CHE] getWorkspaceId called, devWorkspaceId:', devWorkspaceId, 'uri:', uri.toString());
 	if (devWorkspaceId) {
-		return hash(devWorkspaceId + uri.toString()).toString(16);
+		const id = hash(devWorkspaceId + uri.toString()).toString(16);
+		console.log('[CHE] workspace ID (with devWorkspaceId):', id);
+		return id;
 	}
-	return hash(uri.toString()).toString(16);
+	const id = hash(uri.toString()).toString(16);
+	console.log('[CHE] workspace ID (WITHOUT devWorkspaceId):', id);
+	return id;
 }
