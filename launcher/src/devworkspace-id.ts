@@ -9,6 +9,7 @@
  ***********************************************************************/
 
 import { env } from 'process';
+import { unlink } from 'fs/promises';
 import { FILE_WORKBENCH, FILE_WORKBENCH_WEB_MAIN } from './files.js';
 import * as fs from './fs-extra.js';
 
@@ -37,5 +38,11 @@ export class DevWorkspaceId {
     const content = await fs.readFile(file);
     const newContent = content.replace(text, newText);
     await fs.writeFile(file, newContent);
+    // Remove pre-compressed .gz so the server serves the patched uncompressed file
+    try {
+      await unlink(file + '.gz');
+    } catch {
+      // .gz file may not exist, that's fine
+    }
   }
 }
