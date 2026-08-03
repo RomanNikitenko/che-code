@@ -1,5 +1,5 @@
 /**********************************************************************
- * Copyright (c) 2023 Red Hat, Inc.
+ * Copyright (c) 2023-2026 Red Hat, Inc.
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -9,5 +9,7 @@
  ***********************************************************************/
 
 export const FILE_WORKBENCH = 'out/vs/code/browser/workbench/workbench.js';
+
+export const FILE_DEV_WORKSPACE_ID = 'out/vs/platform/workspaces/common/che/devWorkspaceId.js';
 
 export const FILE_EXTENSION_HOST_PROCESS = 'out/vs/workbench/api/node/extensionHostProcess.js';

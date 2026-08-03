@@ -9,7 +9,7 @@
  ***********************************************************************/
 
 import { env } from 'process';
-import { FILE_WORKBENCH } from './files.js';
+import { FILE_DEV_WORKSPACE_ID } from './files.js';
 import * as fs from './fs-extra.js';
 
 const DEVWORKSPACE_ID_MASK = 'https://{{che-cluster}}.{{host}}/{{namespace}}/{{workspace-name}}/{{port}}/';
@@ -26,9 +26,9 @@ export class DevWorkspaceId {
     console.log(`  > apply DevWorkspace ID [${env.DEVWORKSPACE_ID}]`);
 
     try {
-      await this.update(FILE_WORKBENCH, DEVWORKSPACE_ID_MASK, env.DEVWORKSPACE_ID);
+      await this.update(FILE_DEV_WORKSPACE_ID, DEVWORKSPACE_ID_MASK, env.DEVWORKSPACE_ID);
     } catch (err) {
-      console.error(`${err.message} Webviews will not work if CDN disabled.`);
+      console.error(`${err.message} Workspace state isolation will not work.`);
     }
   }
 
