@@ -145,7 +145,7 @@
     "ws": "^8.21.0",
     "yauzl": "^3.0.0",
     "yazl": "^2.4.3",
-    "js-yaml": "^4.1.0"
+    "js-yaml": "^4.3.1"
   },
   "devDependencies": {
     "@playwright/cli": "^0.1.1",
