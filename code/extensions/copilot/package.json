@@ -6297,7 +6297,7 @@
 		"@vscode/vsce": "3.6.0",
 		"agent-browser": "^0.16.3",
 		"copyfiles": "^2.4.1",
-		"csv-parse": "^6.0.0",
+		"csv-parse": "^7.0.2",
 		"dotenv": "^17.2.0",
 		"electron": "^39.8.5",
 		"eslint": "^9.30.0",
