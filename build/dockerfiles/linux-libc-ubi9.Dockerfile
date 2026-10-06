@@ -6,8 +6,8 @@
 # SPDX-License-Identifier: EPL-2.0
 #
 
-# https://registry.access.redhat.com/ubi9/nodejs-20
-FROM registry.access.redhat.com/ubi9/nodejs-22:9.7-1776735844 as linux-libc-ubi9-builder
+# https://registry.access.redhat.com/ubi9/nodejs-24
+FROM registry.access.redhat.com/ubi9/nodejs-24:9.8-1785389273 as linux-libc-ubi9-builder
 
 USER root
 
@@ -20,6 +20,14 @@ ENV GITHUB_TOKEN=$GITHUB_TOKEN
 # For example, vscode ripgrep downloading is an example of such case.
 RUN if [ -z $GITHUB_TOKEN ]; then unset GITHUB_TOKEN; fi
 
+# UBI AppStream can temporarily omit packages on some arches (seen on aarch64).
+# Enable CentOS Stream repos so build deps resolve reliably.
+RUN ARCH=$(uname -m) \
+    && yum install -y \
+      "https://mirror.stream.centos.org/9-stream/BaseOS/${ARCH}/os/Packages/centos-gpg-keys-9.0-38.el9.noarch.rpm" \
+      "https://mirror.stream.centos.org/9-stream/BaseOS/${ARCH}/os/Packages/centos-stream-repos-9.0-38.el9.noarch.rpm" \
+    && yum -y clean all && rm -rf /var/cache/yum
+
 # Install libsecret-devel on s390x and ppc64le for keytar build (binary included in npm package for x86)
 RUN { if [[ $(uname -m) == "s390x" ]]; then LIBSECRET="\
       https://mirror.stream.centos.org/9-stream/AppStream/s390x/os/Packages/libsecret-0.20.4-4.el9.s390x.rpm \
@@ -31,8 +39,8 @@ RUN { if [[ $(uname -m) == "s390x" ]]; then LIBSECRET="\
       https://mirror.stream.centos.org/9-stream/AppStream/x86_64/os/Packages/libsecret-devel-0.20.4-4.el9.x86_64.rpm \
       libsecret"; \
     elif [[ $(uname -m) == "aarch64" ]]; then LIBSECRET="\
-      https://mirror.stream.centos.org/9-stream/AppStream/aarch64/os/Packages/libsecret-devel-0.20.4-4.el9.aarch64.rpm \
-      libsecret"; \
+      https://mirror.stream.centos.org/9-stream/AppStream/aarch64/os/Packages/libsecret-0.20.4-4.el9.aarch64.rpm \
+      https://mirror.stream.centos.org/9-stream/AppStream/aarch64/os/Packages/libsecret-devel-0.20.4-4.el9.aarch64.rpm"; \
     else \
       LIBSECRET=""; echo "Warning: arch $(uname -m) not supported"; \
     fi; } \
@@ -48,7 +56,7 @@ RUN { if [[ $(uname -m) == "s390x" ]]; then LIBSECRET="\
     else \
       LIBKEYBOARD=""; echo "Warning: arch $(uname -m) not supported"; \
     fi; } \
-    && yum install -y $LIBSECRET $LIBKEYBOARD make cmake gcc gcc-c++ python3.9 git git-core-doc openssh less libX11-devel libxkbcommon krb5-devel bash tar gzip rsync patch npm \
+    && yum install -y $LIBSECRET $LIBKEYBOARD make cmake gcc gcc-c++ git git-core-doc openssh less libX11-devel libxkbcommon krb5-devel bash tar gzip rsync patch npm \
     && yum -y clean all && rm -rf /var/cache/yum
 
 #########################################################
@@ -68,6 +76,11 @@ RUN git init .
 # change network timeout (slow using multi-arch build)
 RUN npm config set fetch-retry-mintimeout 100000 && npm config set fetch-retry-maxtimeout 600000
 
+# node-gyp's make generator execs gyp entrypoints via shebang; UBI npm may ship them without +x
+RUN chmod +x \
+      /usr/lib/node_modules/npm/node_modules/node-gyp/gyp/gyp_main.py \
+      /usr/lib/node_modules/npm/node_modules/node-gyp/gyp/gyp
+
 # Grab dependencies (and force to rebuild them)
 RUN rm -rf /checode-compilation/node_modules && npm install --force
 
@@ -78,8 +91,18 @@ RUN NODE_ARCH=$(echo "console.log(process.arch)" | node) \
     && mkdir -p /checode-compilation/.build/node/v${NODE_VERSION}/linux-${NODE_ARCH} \
     && echo "caching /checode-compilation/.build/node/v${NODE_VERSION}/linux-${NODE_ARCH}/node" \
     && cp /usr/bin/node /checode-compilation/.build/node/v${NODE_VERSION}/linux-${NODE_ARCH}/node \
-    && VSCODE_MANGLE_WORKERS=2 NODE_OPTIONS="--max-old-space-size=8192" ./node_modules/.bin/gulp vscode-reh-web-linux-${NODE_ARCH}-min \
+    && NODE_OPTIONS="--max-old-space-size=8192" ./node_modules/.bin/gulp copy-codicons compile-non-native-extensions-build compile-copilot-extension-build compile-extension-media-build \
+    && npx tsgo --project src/tsconfig.json --noEmit --skipLibCheck \
+    && NODE_OPTIONS="--max-old-space-size=8192" node build/next/index.ts bundle --minify --nls --mangle-privates --target server-web --out out-vscode-reh-web-min \
+    && NODE_OPTIONS="--max-old-space-size=8192" ./node_modules/.bin/gulp vscode-reh-web-linux-${NODE_ARCH}-min-ci \
     && cp -r ../vscode-reh-web-linux-${NODE_ARCH} /checode \
+    # Pre-compress static assets for faster HTTP delivery (served by che/webClientServer.ts)
+    # Exclude files patched by the launcher at runtime — they are compressed post-patch by the launcher itself
+    && find /checode/out -type f \( -name "*.js" -o -name "*.css" -o -name "*.html" -o -name "*.json" \) -size +1k \
+       -not -path "*/vs/code/browser/workbench/workbench.js" \
+       -not -path "*/vs/workbench/workbench.web.main.internal.js" \
+       -not -path "*/vs/workbench/api/node/extensionHostProcess.js" \
+       -exec gzip -9 -k {} \; \
     # cache shared libs from this image to provide them to a user's container
     && mkdir -p /checode/ld_libs/core /checode/ld_libs/openssl \
     && find /usr/lib64 -name 'libbrotli*' -exec cp -P -t /checode/ld_libs/core/ {} + \

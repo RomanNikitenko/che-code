@@ -10,9 +10,11 @@
 
 import { CodeWorkspace } from './code-workspace.js';
 import { DevWorkspaceId } from './devworkspace-id.js';
+import { EditorConfigMap } from './editor-configmap.js';
 import { NodeExtraCertificate } from './node-extra-certificate.js';
 import { OpenVSIXRegistry } from './openvsix-registry.js';
 import { LocalStorageKeyProvider } from './local-storage-key-provider.js';
+import { PostPatchCompression } from './post-patch-compression.js';
 import { TrustedExtensions } from './trusted-extensions.js';
 import { VSCodeLauncher } from './vscode-launcher.js';
 import { WebviewResources } from './webview-resources.js';
@@ -31,10 +33,12 @@ export class Main {
     await new WebviewResources().configure();
     await new NodeExtraCertificate().configure();
     await new LocalStorageKeyProvider().configure();
+    await new PostPatchCompression().compress();
     await new TrustedExtensions().configure();
 
-    const workspaceFile = await new CodeWorkspace().generate();
-    await new EditorConfigurations(workspaceFile).configure();
+    const configmapData = await new EditorConfigMap().read();
+    const workspaceFile = await new CodeWorkspace(configmapData).generate();
+    await new EditorConfigurations(workspaceFile, configmapData).configure();
 
     await new VSCodeLauncher().launch(workspaceFile);
   }
