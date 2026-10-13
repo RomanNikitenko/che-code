@@ -5,6 +5,7 @@
 ## Use Cases
 
 1. [Chat layout after Sign In when the panel was resized](#1-chat-layout-after-sign-in-when-the-panel-was-resized)
+2. [Copilot stays signed in when the GitHub token changed between restarts](#2-copilot-stays-signed-in-when-the-github-token-changed-between-restarts)
 
 ---
 
@@ -27,3 +28,32 @@ While the Sign In view is shown, the chat title is hidden. If the chat panel is 
 - The chat with the previous conversation is shown again.
 - The conversation title, message list, input and input toolbar are fully visible.
 - The input is not cut off and the title does not overlap the message list, without any extra resize.
+
+---
+
+## 2. Copilot stays signed in when the GitHub token changed between restarts
+
+At workspace start, if the GitHub token differs from the one the saved sessions were created with, all GitHub sessions are re-created with the new token. Before the fix, the old and new sessions were reported in a single change event. The workbench then treated the user as signed out: the Copilot status bar item showed **Sign In** even though Copilot actually worked. This lasted until the next sign-in change.
+
+The bug depends on timing, so run the scenario three to five times. A plain restart of W1 does not repeat it, because after step 4 the saved sessions already use the new token. To repeat, run **GitHub: Remove Device Authentication Token** in W1, stop W1 and start again from step 3.
+
+### Steps to reproduce
+
+**Precondition:** two workspaces of the same user in the same Che namespace, **W1** and **W2**. No Device Authentication token exists yet. If one exists, run **GitHub: Remove Device Authentication Token** first.
+
+1. Start **W1** (it uses the GitHub PAT). Open Copilot Chat and make sure the "GitHub login failed" view with the **Sign In** button is shown.
+2. Stop **W1**.
+3. Start **W2**, open Copilot Chat, click **Sign In** and complete Device Authentication. The Device Authentication token is stored per namespace, so W1 will pick it up too. Stop **W2**.
+
+   *Alternative to steps 2–3:* replace the GitHub Personal Access Token in Dashboard → User Preferences → Personal Access Tokens.
+4. Start **W1** and wait until it is fully loaded.
+5. Look at the Copilot item in the status bar (bottom right, Copilot icon). Hover over it or click it to open the Copilot status.
+6. Open Copilot Chat and send a message.
+
+### Expected behavior
+
+- The Copilot status bar item shows only the Copilot icon, **not** "Sign In". The Copilot status does not ask you to sign in.
+- Copilot Chat shows the chat (not the Sign In view) and answers the message.
+- The status stays correct without signing out and back in from the Accounts menu.
+
+**Broken behavior (before the fix):** the Copilot status bar item shows **Sign In** and the Copilot status asks you to sign in, although Copilot Chat answers messages. It stays like this until the next sign-in change, for example signing out and back in from the Accounts menu.
