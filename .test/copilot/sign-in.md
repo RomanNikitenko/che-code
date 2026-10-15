@@ -6,6 +6,7 @@
 
 1. [Chat layout after Sign In when the panel was resized](#1-chat-layout-after-sign-in-when-the-panel-was-resized)
 2. [Copilot stays signed in when the GitHub token changed between restarts](#2-copilot-stays-signed-in-when-the-github-token-changed-between-restarts)
+3. [Sign In right after removing the Device Authentication token](#3-sign-in-right-after-removing-the-device-authentication-token)
 
 ---
 
@@ -57,3 +58,27 @@ The bug depends on timing, so run the scenario three to five times. A plain rest
 - The status stays correct without signing out and back in from the Accounts menu.
 
 **Broken behavior (before the fix):** the Copilot status bar item shows **Sign In** and the Copilot status asks you to sign in, although Copilot Chat answers messages. It stays like this until the next sign-in change, for example signing out and back in from the Accounts menu.
+
+---
+
+## 3. Sign In right after removing the Device Authentication token
+
+**GitHub: Remove Device Authentication Token** first removes the Device Authentication sessions, so Copilot shows the Sign In view almost at once. Removing the token and restoring the PAT sessions takes another 1–3 seconds. Before the fix, Sign In clicked during those seconds did not start Device Authentication: the Sign In view came back, and a second Sign In was needed.
+
+The window is only 1–3 seconds, so act quickly and repeat the scenario a few times.
+
+### Steps to reproduce
+
+**Precondition:** the workspace has a GitHub PAT and Device Authentication is completed, so Copilot Chat works.
+
+1. Open Copilot Chat.
+2. Run **GitHub: Remove Device Authentication Token** from the Command Palette.
+3. As soon as the "GitHub login failed" view with the **Sign In** button appears, click **Sign In** → **Continue with GitHub**. Do it before the notification "The token was deleted successfully…" appears.
+
+### Expected behavior
+
+- Device Authentication starts from this first click: the Device Authentication dialog with a one-time code opens. It may open a moment later, right after the "The token was deleted successfully…" notification.
+- After completing Device Authentication, Copilot Chat works.
+- No second Sign In click is needed.
+
+**Broken behavior (before the fix):** after **Continue with GitHub** the dialog closes, Device Authentication does not start, and the Sign In view is shown again. Only a second Sign In click starts Device Authentication.
