@@ -8,6 +8,7 @@
 2. [Copilot stays signed in when the GitHub token changed between restarts](#2-copilot-stays-signed-in-when-the-github-token-changed-between-restarts)
 3. [Sign In right after removing the Device Authentication token](#3-sign-in-right-after-removing-the-device-authentication-token)
 4. [Copilot Chat is stable right after a window reload](#4-copilot-chat-is-stable-right-after-a-window-reload)
+5. [BYOK models keep the chat usable when the GitHub login fails](#5-byok-models-keep-the-chat-usable-when-the-github-login-fails)
 
 ---
 
@@ -107,3 +108,34 @@ This use case checks that a normal startup with working Copilot does not disturb
 - After the reload, the chat opens in the same mode and the mode picker does not flicker or switch modes.
 - The message sent right after the reload gets a normal answer, without errors such as "Failed to get a response".
 - Step 5 still works: after the removal the Sign In view is shown, and after Device Authentication the chat comes back and answers.
+
+---
+
+## 5. BYOK models keep the chat usable when the GitHub login fails
+
+When the GitHub token cannot be used for Copilot, the chat is replaced with the Sign In view. The exception is BYOK (Bring Your Own Key) models: if they are configured, the chat must stay usable with them. Before the fix:
+- if BYOK models went away while the GitHub login was failing, the Sign In view did not appear until something else changed in the chat;
+- the check accepted any Copilot welcome message, not only "GitHub login failed", so another message could hide a working BYOK chat.
+
+### Steps to reproduce
+
+**Precondition:**
+- The workspace has a GitHub PAT and Device Authentication is completed, so Copilot Chat works.
+- You have a BYOK provider to add, for example an OpenAI or Anthropic API key, or a reachable Ollama server.
+
+**Chat: Manage Language Models** is available only while Copilot is signed in, so add the BYOK model before removing the token.
+
+1. Run **Chat: Manage Language Models** from the Command Palette and add the BYOK provider and a model. Keep the Language Models editor open.
+2. In Copilot Chat, select the BYOK model in the model picker and send a message to make sure it answers.
+3. Run **GitHub: Remove Device Authentication Token**.
+4. Look at Copilot Chat and send another message with the BYOK model.
+5. In the Language Models editor, remove the BYOK provider (or all its models).
+6. Look at Copilot Chat again, without reloading the window.
+
+### Expected behavior
+
+- After step 3, the chat is **not** replaced with the Sign In view. The BYOK model still answers in step 4.
+- After step 5, the "GitHub login failed" view with the **Sign In** button appears right away, without a window reload or any other action.
+- Clicking **Sign In** and completing Device Authentication brings the chat back.
+
+**Broken behavior (before the fix):** after step 5 the chat stays visible although no model can answer, and the Sign In view appears only after something else changes, for example a window reload.
