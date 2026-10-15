@@ -7,6 +7,7 @@
 1. [Chat layout after Sign In when the panel was resized](#1-chat-layout-after-sign-in-when-the-panel-was-resized)
 2. [Copilot stays signed in when the GitHub token changed between restarts](#2-copilot-stays-signed-in-when-the-github-token-changed-between-restarts)
 3. [Sign In right after removing the Device Authentication token](#3-sign-in-right-after-removing-the-device-authentication-token)
+4. [Copilot Chat is stable right after a window reload](#4-copilot-chat-is-stable-right-after-a-window-reload)
 
 ---
 
@@ -82,3 +83,27 @@ The window is only 1–3 seconds, so act quickly and repeat the scenario a few t
 - No second Sign In click is needed.
 
 **Broken behavior (before the fix):** after **Continue with GitHub** the dialog closes, Device Authentication does not start, and the Sign In view is shown again. Only a second Sign In click starts Device Authentication.
+
+---
+
+## 4. Copilot Chat is stable right after a window reload
+
+On every startup Copilot reports "GitHub login is not failed" once. Before the fix, this was treated as a login state change, and all chat setup agents were registered again, even for users with working Copilot. The visible effects are small: the chat mode picker could flicker, and a message sent right after the reload could be affected.
+
+This use case checks that a normal startup with working Copilot does not disturb the chat. It also checks that the real login state changes still work.
+
+### Steps to reproduce
+
+**Precondition:** the workspace has a GitHub PAT and Device Authentication is completed, so Copilot Chat works.
+
+1. Open Copilot Chat in the Agent mode.
+2. Run **Developer: Reload Window**.
+3. While the window is loading, watch the chat mode picker (Agent / Ask / Edit) at the bottom of the chat input.
+4. As soon as the chat input is available, send a message, for example `hi`.
+5. Run **GitHub: Remove Device Authentication Token**, then click **Sign In** and complete Device Authentication.
+
+### Expected behavior
+
+- After the reload, the chat opens in the same mode and the mode picker does not flicker or switch modes.
+- The message sent right after the reload gets a normal answer, without errors such as "Failed to get a response".
+- Step 5 still works: after the removal the Sign In view is shown, and after Device Authentication the chat comes back and answers.
