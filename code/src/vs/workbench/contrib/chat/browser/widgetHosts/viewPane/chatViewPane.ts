@@ -55,7 +55,7 @@ import { AgentSessionsControl } from '../../agentSessions/agentSessionsControl.j
 import { ACTION_ID_NEW_CHAT } from '../../actions/chatActions.js';
 import { ChatWidget } from '../../widget/chatWidget.js';
 import { ChatViewWelcomeController, IViewWelcomeDelegate } from '../../viewsWelcome/chatViewWelcomeController.js';
-import { IChatViewsWelcomeDescriptor } from '../../viewsWelcome/chatViewsWelcome.js';
+import { chatViewsWelcomeRegistry, IChatViewsWelcomeDescriptor } from '../../viewsWelcome/chatViewsWelcome.js';
 import { IWorkbenchLayoutService, LayoutSettings, Position } from '../../../../../services/layout/browser/layoutService.js';
 import { AgentSessionsViewerOrientation, AgentSessionsViewerPosition } from '../../agentSessions/agentSessions.js';
 import { IProgressService } from '../../../../../../platform/progress/common/progress.js';
@@ -856,7 +856,18 @@ export class ChatViewPane extends ViewPane implements IViewWelcomeDelegate {
 			}));
 		this._widget.render(chatControlsContainer);
 
-		const updateWidgetVisibility = (reader?: IReader) => this._widget.setVisible(this.isBodyVisible() && !this.welcomeController?.isShowingWelcome.read(reader));
+		let wasWelcomeShowing = false;
+		const updateWidgetVisibility = (reader?: IReader) => {
+			const isWelcomeShowing = !!this.welcomeController?.isShowingWelcome.read(reader);
+			chatControlsContainer.style.display = isWelcomeShowing ? 'none' : '';
+			this._widget.setVisible(this.isBodyVisible() && !isWelcomeShowing);
+
+			// A layout while the welcome view was showing measured the hidden title as 0 high
+			if (wasWelcomeShowing && !isWelcomeShowing) {
+				this.relayout();
+			}
+			wasWelcomeShowing = isWelcomeShowing;
+		};
 		this._register(this.onDidChangeBodyVisibility(() => updateWidgetVisibility()));
 		this._register(autorun(reader => updateWidgetVisibility(reader)));
 
@@ -900,6 +911,11 @@ export class ChatViewPane extends ViewPane implements IViewWelcomeDelegate {
 				this.relayout();
 			}
 		}));
+
+		// Re-evaluate `shouldShowWelcome` when the GitHub login state changes
+		// (e.g. Device Authentication completed or token removed) or BYOK models come and go
+		const welcomeStateContextKeys = new Set(['github.copilot.interactiveSession.gitHubLoginFailed', ChatEntitlementContextKeys.hasByokModels.key]);
+		this._register(Event.filter(this.contextKeyService.onDidChangeContext, e => e.affectsSome(welcomeStateContextKeys))(() => this._onDidChangeViewWelcomeState.fire()));
 
 		// Track the active chat model and reveal it in the sessions control if side-by-side
 		this._register(chatWidget.onDidChangeViewModel(() => {
@@ -1511,6 +1527,19 @@ export class ChatViewPane extends ViewPane implements IViewWelcomeDelegate {
 	}
 
 	override shouldShowWelcome(): boolean {
+		// Show the Copilot "Sign In" welcome view when the GitHub token cannot be exchanged for a Copilot token.
+		// Copilot cannot serve any request then, so the current chat is replaced until sign-in (it stays in history).
+		// Only when the GitHub login failed welcome descriptor actually matches (e.g. not when BYOK models are available)
+		const gitHubLoginFailedKey = 'github.copilot.interactiveSession.gitHubLoginFailed';
+		if (this.contextKeyService.getContextKeyValue<boolean>(gitHubLoginFailedKey)) {
+			const hasGitHubLoginFailedWelcomeView = chatViewsWelcomeRegistry.get().some(descriptor =>
+				descriptor.when.keys().includes(gitHubLoginFailedKey) && this.contextKeyService.contextMatchesRules(descriptor.when));
+			this.logService.info(`[ChatViewPane] shouldShowWelcome: gitHubLoginFailed=true hasGitHubLoginFailedWelcomeView=${hasGitHubLoginFailedWelcomeView}`);
+			if (hasGitHubLoginFailedWelcomeView) {
+				return true;
+			}
+		}
+
 		const noPersistedSessions = !this.chatService.hasSessions();
 		const hasCoreAgent = this.chatAgentService.getAgents().some(agent => agent.isCore && agent.locations.includes(ChatAgentLocation.Chat));
 		const hasDefaultAgent = this.chatAgentService.getDefaultAgent(ChatAgentLocation.Chat) !== undefined; // only false when Hide AI Features has run and unregistered the setup agents
