@@ -9,6 +9,7 @@
 3. [Sign In right after removing the Device Authentication token](#3-sign-in-right-after-removing-the-device-authentication-token)
 4. [Copilot Chat is stable right after a window reload](#4-copilot-chat-is-stable-right-after-a-window-reload)
 5. [BYOK models keep the chat usable when the GitHub login fails](#5-byok-models-keep-the-chat-usable-when-the-github-login-fails)
+6. [Sign In when the user has no GitHub PAT and no Device Authentication token](#6-sign-in-when-the-user-has-no-github-pat-and-no-device-authentication-token)
 
 ---
 
@@ -139,3 +140,41 @@ When the GitHub token cannot be used for Copilot, the chat is replaced with the 
 - Clicking **Sign In** and completing Device Authentication brings the chat back.
 
 **Broken behavior (before the fix):** after step 5 the chat stays visible although no model can answer, and the Sign In view appears only after something else changes, for example a window reload.
+
+---
+
+## 6. Sign In when the user has no GitHub PAT and no Device Authentication token
+
+This is the main Sign In flow for a user who has neither a GitHub Personal Access Token nor a Device Authentication token. Copilot Chat shows the Welcome view with the **Sign In** button, and Device Authentication is started from it. After the Device Authentication token is removed, the Welcome view comes back. A new Sign In restores the chat with the previous conversation.
+
+### Steps to reproduce
+
+**Precondition:**
+- The user has no GitHub token in Dashboard → User Preferences → Personal Access Tokens.
+- No Device Authentication token exists yet. If one exists, run **GitHub: Remove Device Authentication Token** first.
+
+1. Start a workspace from `https://github.com/RomanNikitenko/web-nodejs-sample.git` and wait until it is fully loaded.
+2. Open the GitHub Pull Requests view.
+
+   **Expected:** the view shows the **Sign In** button.
+3. Open Copilot Chat.
+
+   **Expected:** the Welcome view with the **Sign In** button is shown instead of the chat.
+4. Click **Sign In** in Copilot Chat.
+
+   **Expected:** Device Authentication starts from the first click: the Device Authentication dialog with a one-time code opens.
+5. Complete Device Authentication.
+
+   **Expected:** the Welcome view is replaced with the chat.
+6. Send a few messages to Copilot, for example `Explain the structure of this project`.
+
+   **Expected:** Copilot answers the messages.
+7. Run **GitHub: Remove Device Authentication Token** from the Command Palette.
+
+   **Expected:** the Welcome view with the **Sign In** button replaces the chat.
+8. Click **Sign In** and complete Device Authentication again.
+
+   **Expected:** the chat comes back and shows the conversation from step 6.
+9. Send another message in the same conversation.
+
+   **Expected:** Copilot answers and continues the previous conversation.
