@@ -17,7 +17,7 @@ import type { DeviceAuthentication } from './device-authentication';
 import { ErrorHandler } from './error-handler';
 import { ExtensionContext } from './extension-context';
 import { Logger } from './logger';
-import { getMatchingHydrationScopeBundles, hasAllScopes, isUnauthorizedError, sessionMatchesRequestedScopes } from './utils';
+import { arrayEquals, getMatchingHydrationScopeBundles, hasAllScopes, isUnauthorizedError, sessionMatchesRequestedScopes } from './utils';
 import { AuthenticationSession } from 'vscode';
 
 export interface GithubUser {
@@ -47,6 +47,7 @@ export class GitHubAuthProvider implements vscode.AuthenticationProvider {
   }
 
   private deviceAuthentication?: DeviceAuthentication;
+  private deviceAuthTokenRemoval: Promise<void> | undefined;
 
   private readonly storageKey: string;
   private readonly deviceAuthSessionStorageKey: string;
@@ -142,7 +143,13 @@ export class GitHubAuthProvider implements vscode.AuthenticationProvider {
           changed: [],
         });
 
-        // Do not recreate a session using the fallback PAT.
+        // Re-hydrate PAT sessions, so that Sign In starts Device Authentication again
+        try {
+          const token = await this.githubService.getToken();
+          await this.doHydrateWithToken(token);
+        } catch (error) {
+          this.logger.warn(`GitHubAuthProvider: PAT re-hydration failed: ${(error as Error).message}`);
+        }
         return;
       }
 
@@ -268,16 +275,58 @@ export class GitHubAuthProvider implements vscode.AuthenticationProvider {
       }
 
       const account = { label: githubUser.login, id: githubUser.id.toString() };
-      const hydratedSessions = matchingBundles.map(scopes => ({
-        id: v4(),
-        accessToken: token,
-        account,
-        scopes,
-      }));
+      const previousSessions = await this.sessionsPromise;
+
+      // Keep the id of a previous session with the same scopes and account, so the
+      // replacement is not reported as `removed` + `added` (only as `changed` if the token changed)
+      const bundleSessions = matchingBundles.map(scopes => {
+        const previousSession = previousSessions.find(session =>
+          session.account.id === account.id && arrayEquals([...session.scopes].sort(), [...scopes].sort()),
+        );
+        return {
+          id: previousSession?.id ?? v4(),
+          accessToken: token,
+          account,
+          scopes,
+        };
+      });
+
+      // Keep other sessions of the same account (e.g. created by createSession() for scopes
+      // outside the bundles) when the token covers their scopes
+      const bundleSessionIds = new Set(bundleSessions.map(session => session.id));
+      const keptSessions = previousSessions
+        .filter(session =>
+          !bundleSessionIds.has(session.id) &&
+          session.account.id === account.id &&
+          hasAllScopes(tokenScopes, [...session.scopes]),
+        )
+        .map(session => ({ ...session, accessToken: token, account }));
+
+      const hydratedSessions = [...bundleSessions, ...keptSessions];
+
+      const previousSessionsById = new Map(previousSessions.map(session => [session.id, session]));
+      const hydratedIds = new Set(hydratedSessions.map(session => session.id));
+      const removed = previousSessions.filter(session => !hydratedIds.has(session.id));
+      const added = hydratedSessions.filter(session => !previousSessionsById.has(session.id));
+      const changed = hydratedSessions.filter(session => {
+        const previousSession = previousSessionsById.get(session.id);
+        return previousSession !== undefined && previousSession.accessToken !== session.accessToken;
+      });
 
       await this.storeSessions(hydratedSessions);
-      this.sessionChangeEmitter.fire({ added: hydratedSessions, removed: [], changed: [] });
-      this.logger.info(`GitHubAuthProvider: hydrated ${hydratedSessions.length} session(s) from K8s token`);
+
+      // Fire `removed` separately and first: DefaultAccountService resets the default
+      // account when its session is removed and ignores `added` from the same event
+      if (removed.length > 0) {
+        this.sessionChangeEmitter.fire({ added: [], removed, changed: [] });
+      }
+      if (added.length > 0 || changed.length > 0) {
+        this.sessionChangeEmitter.fire({ added, removed: [], changed });
+      }
+      this.logger.info(
+        `GitHubAuthProvider: hydrated ${hydratedSessions.length} session(s) from K8s token ` +
+        `(${keptSessions.length} kept outside scope bundles)`,
+      );
       return hydratedSessions;
     } catch (error) {
       if (isUnauthorizedError(error)) {
@@ -305,6 +354,13 @@ export class GitHubAuthProvider implements vscode.AuthenticationProvider {
   async createSession(scopes: string[]): Promise<vscode.AuthenticationSession> {
     this.logger.info(`GitHubAuthProvider: CREATE SESSION for scopes: ${JSON.stringify(scopes)}`);
     const sortedScopes = [...scopes].sort();
+
+    // Sign In right after Remove Device Authentication Token must see the final state
+    // (PAT active and PAT sessions re-hydrated), otherwise Device Authentication is skipped
+    if (this.deviceAuthTokenRemoval) {
+      this.logger.info('GitHubAuthProvider: waiting for Device Authentication token removal to complete');
+      await this.deviceAuthTokenRemoval.catch(() => undefined);
+    }
 
     let token: string;
     try {
@@ -403,8 +459,10 @@ export class GitHubAuthProvider implements vscode.AuthenticationProvider {
           this.logger.info('GitHubAuthProvider: PAT session already exists for requested scopes, starting device auth flow');
           return undefined;
         }
+        this.logger.info(`GitHubAuthProvider: no existing session for requested scopes, using PAT`);
       }
 
+      this.logger.info(`GitHubAuthProvider: using current token (isDeviceAuth=${isDeviceAuth})`);
       return token;
     } catch (error) {
       if (isUnauthorizedError(error)) {
@@ -459,6 +517,12 @@ export class GitHubAuthProvider implements vscode.AuthenticationProvider {
 
       if (removed.length > 0) {
         this.logger.info(`GitHubAuthProvider: clearing ${removed.length} device-auth sessions, keeping ${kept.length} K8s sessions`);
+        for (const s of kept) {
+          this.logger.info(`GitHubAuthProvider: kept session scopes: [${s.scopes.join(',')}]`);
+        }
+        for (const s of removed) {
+          this.logger.info(`GitHubAuthProvider: removed session scopes: [${s.scopes.join(',')}]`);
+        }
         await this.storeSessions(kept);
         const deviceAuthSessionIds = await this.getDeviceAuthSessionIds();
 
@@ -474,6 +538,66 @@ export class GitHubAuthProvider implements vscode.AuthenticationProvider {
       }
     } catch {
       this.logger.warn('GitHubAuthProvider: unable to determine device-auth token, keeping existing sessions');
+    }
+  }
+
+  /**
+   * Removes the Device Authentication token and its sessions, then re-hydrates PAT sessions.
+   * Session creation waits for this to complete.
+   */
+  async removeDeviceAuthToken(): Promise<void> {
+    const removal = this.doRemoveDeviceAuthToken();
+    this.deviceAuthTokenRemoval = removal;
+    try {
+      await removal;
+    } finally {
+      if (this.deviceAuthTokenRemoval === removal) {
+        this.deviceAuthTokenRemoval = undefined;
+      }
+    }
+  }
+
+  private async doRemoveDeviceAuthToken(): Promise<void> {
+    await this.clearDeviceAuthSessions();
+    await this.githubService.removeDeviceAuthToken();
+    await this.rehydrateAfterDeviceAuthRemoval();
+  }
+
+  private async rehydrateAfterDeviceAuthRemoval(): Promise<void> {
+    try {
+      const isDeviceAuth = await this.getDeviceAuthState();
+      if (isDeviceAuth !== false) {
+        this.logger.warn(`GitHubAuthProvider: skipping PAT re-hydration, current token is not PAT (isDeviceAuth=${isDeviceAuth})`);
+        return;
+      }
+      const token = await this.githubService.getToken();
+      await this.doHydrateWithToken(token);
+    } catch (error) {
+      this.logger.warn(`GitHubAuthProvider: PAT re-hydration after device-auth removal failed: ${(error as Error).message}`);
+    }
+  }
+
+  /**
+   * Checks whether the session uses the current Device Authentication token.
+   * Returns `undefined` if the session is unknown or the token state cannot be determined.
+   */
+  async isDeviceAuthSession(sessionId: string): Promise<boolean | undefined> {
+    const sessions = await this.sessionsPromise;
+    const session = sessions.find(s => s.id === sessionId);
+    if (!session) {
+      return undefined;
+    }
+
+    const isDeviceAuth = await this.getDeviceAuthState();
+    if (isDeviceAuth === undefined) {
+      return undefined;
+    }
+
+    try {
+      return isDeviceAuth && session.accessToken === await this.githubService.getToken();
+    } catch (error) {
+      this.logger.warn(`GitHubAuthProvider: unable to determine if the session uses Device Authentication token: ${(error as Error).message}`);
+      return undefined;
     }
   }
 
