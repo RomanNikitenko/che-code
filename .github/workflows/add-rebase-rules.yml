@@ -1,0 +1,139 @@
+#
+# Copyright (c) 2026 Red Hat, Inc.
+# This program and the accompanying materials are made
+# available under the terms of the Eclipse Public License 2.0
+# which is available at https://www.eclipse.org/legal/epl-2.0/
+#
+# SPDX-License-Identifier: EPL-2.0
+#
+
+#
+# This file was generated using AI assistance (Cursor AI)
+# and reviewed by the maintainers.
+#
+
+name: Add Rebase Rules via dw-claude-runner
+
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  add-rebase-rules:
+    if: >-
+      github.event.issue.pull_request
+      && contains(github.event.comment.body, '/add-rebase-rules')
+    runs-on: ubuntu-22.04
+    permissions:
+      pull-requests: write
+      issues: write
+
+    steps:
+      - name: Check author permission
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PERM=$(gh api "repos/${{ github.repository }}/collaborators/${{ github.event.comment.user.login }}/permission" \
+            --jq '.permission')
+          if [[ "$PERM" != "admin" && "$PERM" != "write" ]]; then
+            echo "User ${{ github.event.comment.user.login }} does not have write access (permission: $PERM)"
+            exit 1
+          fi
+
+      - name: Add reaction to command comment
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh api "repos/${{ github.repository }}/issues/comments/${{ github.event.comment.id }}/reactions" \
+            -f content='rocket' --silent
+
+      - name: Get PR details
+        id: pr
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PR_JSON=$(gh api "repos/${{ github.repository }}/pulls/${{ github.event.issue.number }}")
+          HEAD_SHA=$(echo "$PR_JSON" | jq -r '.head.sha')
+          HEAD_REF=$(echo "$PR_JSON" | jq -r '.head.ref')
+          PR_URL=$(echo "$PR_JSON" | jq -r '.html_url')
+          echo "head_sha=${HEAD_SHA}" >> "$GITHUB_OUTPUT"
+          echo "head_ref=${HEAD_REF}" >> "$GITHUB_OUTPUT"
+          echo "pr_url=${PR_URL}" >> "$GITHUB_OUTPUT"
+
+      - name: Find and update bot comment to in-progress
+        id: bot-comment
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RUN_URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          COMMENT_ID=$(gh api "repos/${{ github.repository }}/issues/${{ github.event.issue.number }}/comments" \
+            --paginate --jq '.[] | select(.body | contains("<!-- rebase-rules-check -->")) | .id' | head -1)
+
+          BODY="<!-- rebase-rules-check -->"$'\n'"### Missing Rebase Rules"$'\n\n'"Adding rebase rules — **in progress**... [View run](${RUN_URL})"
+
+          if [ -n "$COMMENT_ID" ]; then
+            gh api "repos/${{ github.repository }}/issues/comments/${COMMENT_ID}" \
+              -X PATCH -f body="$BODY"
+            echo "comment_id=${COMMENT_ID}" >> "$GITHUB_OUTPUT"
+          else
+            COMMENT_URL=$(gh pr comment "${{ github.event.issue.number }}" \
+              --repo "${{ github.repository }}" \
+              --body "$BODY")
+            NEW_ID=$(echo "$COMMENT_URL" | grep -oE '[0-9]+$')
+            echo "comment_id=${NEW_ID}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Checkout dw-claude-runner
+        uses: actions/checkout@v4
+        with:
+          repository: RomanNikitenko/dw-claude-runner
+          path: dw-claude-runner
+
+      - name: Install oc CLI
+        uses: redhat-actions/openshift-tools-installer@v1
+        with:
+          oc: latest
+
+      - name: Login to OpenShift
+        run: |
+          echo "::add-mask::${{ secrets.OC_SERVER }}"
+          echo "::add-mask::${{ secrets.OC_PROJECT }}"
+          oc login --token=${{ secrets.OC_TOKEN }} \
+                   --server=${{ secrets.OC_SERVER }} > /dev/null
+
+      - name: Select OpenShift project
+        run: oc project ${{ secrets.OC_PROJECT }} > /dev/null
+
+      - name: Run dw-claude-runner
+        working-directory: dw-claude-runner
+        env:
+          PROJECT_URL: '"https://github.com/${{ github.repository }}.git"'
+          TARGET_REPO: ${{ github.repository }}
+          PROMPT: >-
+            Checkout branch '${{ steps.pr.outputs.head_ref }}' first:
+            git fetch origin && git checkout ${{ steps.pr.outputs.head_ref }}
+
+            Then run: add-rebase-rules ${{ steps.pr.outputs.head_sha }}
+
+            After committing, push the changes to the PR branch:
+            git push origin ${{ steps.pr.outputs.head_ref }}
+          TIMEOUT: "600"
+          CLAUDE_TIMEOUT: "600"
+        run: |
+          set -o pipefail
+          ./run.sh -v 2>&1 | tee /tmp/runner-output.txt
+
+      - name: Update comment with result
+        if: always() && steps.bot-comment.outputs.comment_id
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          COMMENT_ID: ${{ steps.bot-comment.outputs.comment_id }}
+          RUN_URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          if [ "${{ job.status }}" = "success" ]; then
+            BODY="<!-- rebase-rules-check -->"$'\n'"### Missing Rebase Rules"$'\n\n'"Rebase rules have been **added successfully**. [View run](${RUN_URL})"$'\n\n'"Please review the new commit pushed to this PR."
+          else
+            BODY="<!-- rebase-rules-check -->"$'\n'"### Missing Rebase Rules"$'\n\n'"Failed to add rebase rules. [View run](${RUN_URL})"
+          fi
+          gh api "repos/${{ github.repository }}/issues/comments/${COMMENT_ID}" \
+            -X PATCH -f body="$BODY"
