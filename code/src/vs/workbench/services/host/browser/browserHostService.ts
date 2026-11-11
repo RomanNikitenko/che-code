@@ -15,6 +15,7 @@ import { whenEditorClosed } from '../../../browser/editor.js';
 import { IWorkspace, IWorkspaceProvider } from '../../../browser/web.api.js';
 import { IFileService } from '../../../../platform/files/common/files.js';
 import { ILabelService, Verbosity } from '../../../../platform/label/common/label.js';
+import { cheFocusLog } from '../../../../base/browser/cheFocusDebug.js'; // TEMPORARY che focus diagnostics
 import { EventType, ModifierKeyEmitter, addDisposableListener, addDisposableThrottledListener, detectFullscreen, disposableWindowInterval, getActiveDocument, getActiveWindow, getWindowId, onDidRegisterWindow, trackFocus, getWindows as getDOMWindows } from '../../../../base/browser/dom.js';
 import { Disposable, DisposableSet, DisposableStore, toDisposable } from '../../../../base/common/lifecycle.js';
 import { IBrowserWorkbenchEnvironmentService } from '../../environment/browser/environmentService.js';
@@ -158,18 +159,27 @@ export class BrowserHostService extends Disposable implements IHostService {
 		const emitter = this._register(new Emitter<boolean>());
 
 		this._register(Event.runAndSubscribe(onDidRegisterWindow, ({ window, disposables }) => {
-			const focusTracker = disposables.add(trackFocus(window));
+			const focusTracker = disposables.add(trackFocus(window, 'host.onDidChangeFocus'));
 			const visibilityTracker = disposables.add(new DomEmitter(window.document, 'visibilitychange'));
 
+			// TEMPORARY che focus diagnostics: log which source produced the sampled value
+			const sample = (source: string) => {
+				const value = this.hasFocus;
+				cheFocusLog('host.focus.sample', { source, value });
+				return value;
+			};
 			Event.any(
-				Event.map(focusTracker.onDidFocus, () => this.hasFocus, disposables),
-				Event.map(focusTracker.onDidBlur, () => this.hasFocus, disposables),
-				Event.map(visibilityTracker.event, () => this.hasFocus, disposables),
-				Event.map(this.onDidChangeActiveWindow, () => this.hasFocus, disposables),
+				Event.map(focusTracker.onDidFocus, () => sample('tracker.onDidFocus'), disposables),
+				Event.map(focusTracker.onDidBlur, () => sample('tracker.onDidBlur'), disposables),
+				Event.map(visibilityTracker.event, () => sample('visibilitychange'), disposables),
+				Event.map(this.onDidChangeActiveWindow, () => sample('onDidChangeActiveWindow'), disposables),
 			)(focus => emitter.fire(focus), undefined, disposables);
 		}, { window: mainWindow, disposables: this._store }));
 
-		return Event.latch(emitter.event, undefined, this._store);
+		// TEMPORARY che focus diagnostics: log what passes the latch (repeated values are dropped)
+		const latched = Event.latch(emitter.event, undefined, this._store);
+		this._register(latched(value => cheFocusLog('host.focus.latched.fire', { value })));
+		return latched;
 	}
 
 	get hasFocus(): boolean {
@@ -197,8 +207,11 @@ export class BrowserHostService extends Disposable implements IHostService {
 			const windowId = getWindowId(window);
 
 			// Emit via focus tracking
-			const focusTracker = disposables.add(trackFocus(window));
-			disposables.add(focusTracker.onDidFocus(() => emitter.fire(windowId)));
+			const focusTracker = disposables.add(trackFocus(window, 'host.onDidChangeActiveWindow'));
+			disposables.add(focusTracker.onDidFocus(() => {
+				cheFocusLog('host.activeWindow.sample', { windowId }); // TEMPORARY che focus diagnostics
+				emitter.fire(windowId);
+			}));
 
 			// Emit via interval: immediately when opening an auxiliary window,
 			// it is possible that document focus has not yet changed, so we
