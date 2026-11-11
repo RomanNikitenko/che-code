@@ -267,6 +267,7 @@
     "@types/minimatch": "^3.0.5"
   },
   "overrides": {
+    "source-map-js": "^1.2.2",
     "node-gyp-build": "4.8.1",
     "kerberos@2.1.1": {
       "node-addon-api": "7.1.0"
@@ -305,6 +306,12 @@
     },
     "express": {
       "proxy-addr": "^2.0.8"
+    },
+    "@github/copilot-sdk": {
+      "zod": "^4.6.7"
+    },
+    "@vscode/component-explorer-cli": {
+      "zod": "^4.6.7"
     }
   },
   "repository": {
