@@ -18,6 +18,7 @@ import { URI } from '../common/uri.js';
 import { hash } from '../common/hash.js';
 import { CodeWindow, ensureCodeWindow, mainWindow } from './window.js';
 import { isPointWithinTriangle } from '../common/numbers.js';
+import { cheFocusLog } from './cheFocusDebug.js'; // TEMPORARY che focus diagnostics
 import { IObservable, derived, derivedOpts, IReader, observableValue, isObservable } from '../common/observable.js';
 
 export interface IRegisteredCodeWindow {
@@ -1354,12 +1355,22 @@ class FocusTracker extends Disposable implements IFocusTracker {
 		}
 	}
 
-	constructor(element: HTMLElement | Window) {
+	private static cheTrackerSeq = 0; // TEMPORARY che focus diagnostics
+
+	constructor(element: HTMLElement | Window, debugName?: string) {
 		super();
 		let hasFocus = FocusTracker.hasFocusWithin(element);
 		let loosingFocus = false;
 
-		const onFocus = () => {
+		// TEMPORARY che focus diagnostics: only window trackers are logged (element trackers are numerous)
+		const cheLog = isHTMLElement(element) ? undefined : (() => {
+			const name = `${debugName ?? 'window'}#${++FocusTracker.cheTrackerSeq}`;
+			cheFocusLog('tracker.create', { name, initialHasFocus: hasFocus, realDocHasFocus: element.document.hasFocus() });
+			return (tag: string, data?: Record<string, unknown>) => cheFocusLog(tag, { name, ...data });
+		})();
+
+		const onFocus = (e?: Event) => {
+			cheLog?.('tracker.onFocus', { trackerHasFocusBefore: hasFocus, loosingFocus, willFire: !hasFocus, eventTarget: e ? (e.target === element ? 'window' : String((e.target as Element)?.tagName)) : 'refresh' });
 			loosingFocus = false;
 			if (!hasFocus) {
 				hasFocus = true;
@@ -1367,10 +1378,12 @@ class FocusTracker extends Disposable implements IFocusTracker {
 			}
 		};
 
-		const onBlur = () => {
+		const onBlur = (e?: Event) => {
+			cheLog?.('tracker.onBlur', { trackerHasFocusBefore: hasFocus, willScheduleBlur: hasFocus, eventTarget: e ? (e.target === element ? 'window' : String((e.target as Element)?.tagName)) : 'refresh' });
 			if (hasFocus) {
 				loosingFocus = true;
 				(isHTMLElement(element) ? getWindow(element) : element).setTimeout(() => {
+					cheLog?.('tracker.blurTimeout', { loosingFocus, willFire: loosingFocus });
 					if (loosingFocus) {
 						loosingFocus = false;
 						hasFocus = false;
@@ -1411,8 +1424,8 @@ class FocusTracker extends Disposable implements IFocusTracker {
  * @param element The `HTMLElement` or `Window` to track focus changes on.
  * @returns An `IFocusTracker` instance.
  */
-export function trackFocus(element: HTMLElement | Window): IFocusTracker {
-	return new FocusTracker(element);
+export function trackFocus(element: HTMLElement | Window, debugName?: string): IFocusTracker {
+	return new FocusTracker(element, debugName);
 }
 
 export function after<T extends Node>(sibling: HTMLElement, child: T): T {

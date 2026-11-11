@@ -13,6 +13,7 @@ import { StatusbarAlignment, IStatusbarService, IStatusbarEntry, IStatusbarEntry
 import { IContextMenuService } from '../../../../platform/contextview/browser/contextView.js';
 import { IAction, Separator, toAction } from '../../../../base/common/actions.js';
 import { IThemeService } from '../../../../platform/theme/common/themeService.js';
+import { cheFocusForceActive, cheFocusLog } from '../../../../base/browser/cheFocusDebug.js'; // TEMPORARY che focus diagnostics
 import { STATUS_BAR_BACKGROUND, STATUS_BAR_FOREGROUND, STATUS_BAR_INACTIVE_BACKGROUND, STATUS_BAR_NO_FOLDER_BACKGROUND, STATUS_BAR_ITEM_HOVER_BACKGROUND, STATUS_BAR_BORDER, STATUS_BAR_NO_FOLDER_FOREGROUND, STATUS_BAR_NO_FOLDER_BORDER, STATUS_BAR_ITEM_COMPACT_HOVER_BACKGROUND, STATUS_BAR_ITEM_FOCUS_BORDER, STATUS_BAR_FOCUS_BORDER } from '../../../common/theme.js';
 import { IWorkspaceContextService, WorkbenchState } from '../../../../platform/workspace/common/workspace.js';
 import { contrastBorder, activeContrastBorder } from '../../../../platform/theme/common/colorRegistry.js';
@@ -729,9 +730,24 @@ class StatusbarPart extends Part implements IStatusbarEntryContainer {
 		// The inactive background is a resting state only: a style override (e.g. while debugging)
 		// and the no folder background both communicate state and must stay visible when inactive.
 		const isWindowActive = this.activeWindowId === undefined ? this.hasWindowFocus() : this.activeWindowId === this.targetWindow.vscodeWindowId;
-		const isInactive = !this.hostService.hasFocus || !isWindowActive;
+		// TEMPORARY che focus diagnostics + fix variant A toggle (localStorage 'che-focus-force-active')
+		const upstreamIsInactive = !this.hostService.hasFocus || !isWindowActive;
+		const forceActive = cheFocusForceActive();
+		const isInactive = forceActive ? false : upstreamIsInactive;
 		const inactiveBackground = isInactive && !styleOverride?.background && hasFolder ? this.getColor(STATUS_BAR_INACTIVE_BACKGROUND) : undefined;
 		const backgroundColor = inactiveBackground || this.getColor(background) || '';
+		cheFocusLog('statusbar.updateStyles', {
+			part: this.getId(),
+			hostHasFocus: this.hostService.hasFocus,
+			activeWindowId: this.activeWindowId,
+			isWindowActive,
+			upstreamIsInactive,
+			forceActive,
+			isInactive,
+			hasFolder,
+			styleOverrideBg: styleOverride?.background,
+			appliedBg: backgroundColor
+		});
 		container.style.backgroundColor = backgroundColor;
 		container.style.boxShadow = this.getId() === Parts.STATUSBAR_PART && this.layoutService.isFloatingPanelsEnabled() && !isHighContrast(this.theme.type) && backgroundColor
 			? `0 1px 0 ${backgroundColor}`

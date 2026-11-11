@@ -17,6 +17,7 @@ import { IBrowserWorkbenchEnvironmentService } from '../../../services/environme
 import { IColorTheme, IThemeService } from '../../../../platform/theme/common/themeService.js';
 import { MODERN_UI_INACTIVE_SHELL_BACKGROUND, MODERN_UI_SHELL_BACKGROUND, TITLE_BAR_ACTIVE_BACKGROUND, TITLE_BAR_ACTIVE_FOREGROUND, TITLE_BAR_INACTIVE_FOREGROUND, TITLE_BAR_INACTIVE_BACKGROUND, TITLE_BAR_BORDER, WORKBENCH_BACKGROUND } from '../../../common/theme.js';
 import { isMacintosh, isWindows, isLinux, isWeb, isNative, platformLocale } from '../../../../base/common/platform.js';
+import { cheFocusForceActive, cheFocusLog } from '../../../../base/browser/cheFocusDebug.js'; // TEMPORARY che focus diagnostics
 import { Color } from '../../../../base/common/color.js';
 import { EventType, EventHelper, Dimension, append, $, addDisposableListener, prepend, reset, getWindow, getWindowId, isAncestor, getActiveDocument, isHTMLElement, AnimationFrameScheduler } from '../../../../base/browser/dom.js';
 import { CustomMenubarControl } from './menubarControl.js';
@@ -343,10 +344,22 @@ export class BrowserTitlebarPart extends Part implements ITitlebarPart {
 		this.registerListeners();
 	}
 
+	// TEMPORARY che focus diagnostics: why updateStyles() was called
+	private cheUpdateReason: string | undefined;
+
+	protected override onThemeChange(theme: IColorTheme): void {
+		this.cheUpdateReason = 'theme';
+		super.onThemeChange(theme);
+	}
+
 	private registerListeners(): void {
-		this._register(this.hostService.onDidChangeFocus(() => this.updateStyles()));
+		this._register(this.hostService.onDidChangeFocus(focus => {
+			this.cheUpdateReason = `host.onDidChangeFocus(${focus})`;
+			this.updateStyles();
+		}));
 		this._register(this.hostService.onDidChangeActiveWindow(windowId => {
 			this.activeWindowId = windowId;
+			this.cheUpdateReason = `host.onDidChangeActiveWindow(${windowId})`;
 			this.updateStyles();
 		}));
 		this._register(this.configurationService.onDidChangeConfiguration(e => this.onConfigurationChanged(e)));
@@ -368,6 +381,7 @@ export class BrowserTitlebarPart extends Part implements ITitlebarPart {
 
 	protected onConfigurationChanged(event: IConfigurationChangeEvent): void {
 		if (event.affectsConfiguration(LayoutSettings.MODERN_UI)) {
+			this.cheUpdateReason = 'config.modernUI';
 			this.updateStyles();
 		}
 
@@ -837,7 +851,24 @@ export class BrowserTitlebarPart extends Part implements ITitlebarPart {
 		// Part container
 		if (this.element) {
 			const isWindowActive = this.activeWindowId === undefined ? this.targetWindow.document.hasFocus() : this.activeWindowId === this.targetWindow.vscodeWindowId;
-			const isInactive = !this.hostService.hasFocus || !isWindowActive;
+			// TEMPORARY che focus diagnostics + fix variant A toggle (localStorage 'che-focus-force-active')
+			const upstreamIsInactive = !this.hostService.hasFocus || !isWindowActive;
+			const forceActive = cheFocusForceActive();
+			const isInactive = forceActive ? false : upstreamIsInactive;
+			cheFocusLog('titlebar.updateStyles', {
+				reason: this.cheUpdateReason ?? 'other(create/explicit)',
+				isAuxiliary: this.isAuxiliary,
+				hostHasFocus: this.hostService.hasFocus,
+				activeWindowId: this.activeWindowId,
+				targetWindowId: this.targetWindow.vscodeWindowId,
+				isWindowActive,
+				upstreamIsInactive,
+				forceActive,
+				isInactive,
+				activeBg: this.getColor(TITLE_BAR_ACTIVE_BACKGROUND),
+				inactiveBg: this.getColor(TITLE_BAR_INACTIVE_BACKGROUND)
+			});
+			this.cheUpdateReason = undefined;
 			if (isInactive) {
 				this.element.classList.add('inactive');
 			} else {
